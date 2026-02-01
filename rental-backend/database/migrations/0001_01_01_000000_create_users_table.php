@@ -13,14 +13,25 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
+            
+            // 1. REPLACED 'name' with your new fields
+            $table->string('first_name'); 
+            $table->string('last_name');
+            $table->date('dob');          // Date of Birth
+            $table->string('address');
+            
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            
+            // 2. ADDED this for the ID Card image
+            $table->string('id_card_path')->nullable(); 
+
             $table->rememberToken();
             $table->timestamps();
         });
 
+        // These stay exactly the same as before
         Schema::create('password_reset_tokens', function (Blueprint $table) {
             $table->string('email')->primary();
             $table->string('token');
