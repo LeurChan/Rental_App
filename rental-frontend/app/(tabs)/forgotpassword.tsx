@@ -16,7 +16,7 @@ export default function ForgotPasswordScreen() {
       
       setLoading(true);
       try {
-          const response = await axios.post('http://192.168.1.212:8000/api/forgot-password', { email });
+          const response = await axios.post('http://10.0.2.2:8000/api/forgot-password', { email });
           if(response.data.status) {
               Alert.alert("Success", "Reset link sent to your email!");
               router.back();

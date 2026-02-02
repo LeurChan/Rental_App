@@ -61,7 +61,7 @@ export default function RegisterScreen() {
     try {
       // ⚠️ Use your Laptop's IP (e.g. 192.168.1.5) if testing on a real phone
       // Inside handleRegister function
-        const response = await axios.post('http://192.168.1.212:8000/api/register', formData, {
+        const response = await axios.post('http://10.0.2.2:8000/api/register', formData, {
           headers: { 
             'Content-Type': 'multipart/form-data',
             'Accept': 'application/json' 

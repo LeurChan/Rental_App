@@ -2,35 +2,32 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens; // 1. Add this import
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    // 2. Add HasApiTokens to the use statement
+    use HasApiTokens, Notifiable; 
 
     /**
      * The attributes that are mass assignable.
-     *
-     * @var list<string>
+     * Ensure these match your registration form fields.
      */
     protected $fillable = [
-        'first_name', 
-        'last_name',  
-        'dob',        
-        'address',    
+        'name',
+        'first_name',
+        'last_name',
         'email',
         'password',
-        'id_card_path', 
+        'dob',
+        'address',
+        'id_card_path',
     ];
 
     /**
      * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
      */
     protected $hidden = [
         'password',
@@ -39,8 +36,6 @@ class User extends Authenticatable
 
     /**
      * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
      */
     protected function casts(): array
     {
@@ -49,5 +44,4 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
-    
 }
