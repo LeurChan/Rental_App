@@ -20,7 +20,7 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       // ⚠️ Use 10.0.2.2 for Android Emulator, or your PC IP for Real Phone
-      const response = await axios.post('http://10.0.2.2:8000/api/login', { email, password });
+      const response = await axios.post('http://192.168.1.212:8000/api/login', { email, password });
 
       if (response.data.status) {
         // Save the authentication token to database/local storage

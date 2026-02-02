@@ -39,7 +39,7 @@ export default function HomeScreen() {
   useEffect(() => {
     // ⚠️ REPLACE WITH YOUR IP (e.g., http://192.168.1.5:8000/api/home)
     // Use http://10.0.2.2:8000/api/home for Android Emulator
-    fetch('http://10.0.2.2:8000/api/home')
+    fetch('http://192.168.1.212:8000/api/home')
       .then((res) => res.json())
       .then((data) => setHouses(data))
       .catch((err) => console.error(err));
