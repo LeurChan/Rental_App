@@ -93,7 +93,7 @@ export default function HomeScreen() {
           
           <View style={styles.locationRow}>
             <Ionicons name="location-outline" size={16} color={Colors.textLight} style={{marginRight: 4}}/>
-            <Text style={styles.locationTextCard} numberOfLines={1}>Dhaka, Bangladesh (Placeholder)</Text>
+            <Text style={styles.locationTextCard} numberOfLines={1}>Phnom Penh, Cambodia (Placeholder)</Text>
           </View>
         </View>
       </TouchableOpacity>
@@ -113,7 +113,7 @@ export default function HomeScreen() {
              <Text style={{fontSize: 12, color: Colors.textLight}}>Location</Text>
              <View style={{flexDirection:'row', alignItems:'center', marginTop: 4}}>
                  <Ionicons name="location-sharp" size={20} color={Colors.primary} />
-                 <Text style={styles.headerLocationText}>Dhaka Bangladesh</Text>
+                 <Text style={styles.headerLocationText}>Phnom Penh, Cambodia</Text>
                  <Ionicons name="chevron-down" size={16} color={Colors.textLight} />
              </View>
           </View>
