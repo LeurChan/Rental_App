@@ -13,3 +13,14 @@ Route::post('/login', [AuthController::class, 'login']);
 
 // Home/Property Routes
 Route::get('/home', [PropertyController::class, 'index']);
+
+
+Route::get('/properties/{id}', [PropertyController::class, 'show']);
+
+// Add this line for the Details Page:
+Route::get('/properties/{id}', [PropertyController::class, 'show']);
+
+// Add this line for the Profile Page:
+Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
+    return $request->user();
+});

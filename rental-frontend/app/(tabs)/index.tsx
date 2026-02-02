@@ -10,42 +10,66 @@ import {
   TextInput,
   Image,
   ScrollView,
-  Dimensions
+  Dimensions,
+  ActivityIndicator
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import axios from 'axios'; // Import Axios
 
-// Define Colors based on your design
+// --- CONFIGURATION ---
+// 1. Point to your specific API URL
+const API_URL = 'http://10.0.2.2:8000/api/home'; 
+// 2. Point to your Storage folder for images
+const STORAGE_URL = 'http://10.0.2.2:8000/storage/'; 
+
 const Colors = {
-  primary: '#3F51B5', // The blue color
-  background: '#F5F7FB', // Light gray background
+  primary: '#3F51B5',
+  background: '#F5F7FB',
   textDark: '#1A1A1A',
   textLight: '#999999',
   white: '#FFFFFF',
-  red: '#FF5A5F', // For heart icons
+  red: '#FF5A5F',
 };
 
 const { width } = Dimensions.get('window');
 
+// Define Interface for TypeScript safety
+interface Property {
+  id: number;
+  name: string;
+  price: number;
+  location: string;
+  image_path?: string;
+  category?: string; // Optional if you have categories in DB
+}
+
 export default function HomeScreen() {
   const router = useRouter();
-  const [houses, setHouses] = useState<any[]>([]);
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchText, setSearchText] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Apartment');
 
   const categories = ['Apartment', 'Room', 'Penthouse', 'Duplex'];
 
+  // --- FETCH DATA FROM LARAVEL ---
   useEffect(() => {
-    // ⚠️ REPLACE WITH YOUR IP (e.g., http://192.168.1.5:8000/api/home)
-    // Use http://10.0.2.2:8000/api/home for Android Emulator
-    fetch('http://10.0.2.2:8000/api/home')
-      .then((res) => res.json())
-      .then((data) => setHouses(data))
-      .catch((err) => console.error(err));
+    fetchProperties();
   }, []);
 
-  // --- Render Component: Category Item ---
+  const fetchProperties = async () => {
+    try {
+      const response = await axios.get(API_URL);
+      setProperties(response.data);
+    } catch (error) {
+      console.error("Error fetching properties:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // --- RENDER HELPERS ---
   const renderCategoryItem = ({ item }: { item: string }) => (
     <TouchableOpacity
       onPress={() => setSelectedCategory(item)}
@@ -65,25 +89,29 @@ export default function HomeScreen() {
     </TouchableOpacity>
   );
 
-  // --- Render Component: Property Card (Used for both Nearby and Favorites) ---
-  const renderPropertyCard = ({ item, horizontal = false }: { item: any, horizontal?: boolean }) => {
+  const renderPropertyCard = ({ item, horizontal = false }: { item: Property, horizontal?: boolean }) => {
     const cardStyle = horizontal ? styles.cardHorizontal : styles.cardVertical;
     const imageStyle = horizontal ? styles.cardImageHorizontal : styles.cardImageVertical;
 
-    // Dummy image if none exists (replace with item.image_url later)
-    const imageUrl = 'https://cdn.pixabay.com/photo/2016/11/18/17/46/house-1836070_1280.jpg';
+    // Logic: Use uploaded image if available, else use placeholder
+    const imageUrl = item.image_path 
+      ? { uri: `${STORAGE_URL}${item.image_path}` }
+      : { uri: 'https://via.placeholder.com/400x300.png?text=No+Image' };
 
     return (
-      <TouchableOpacity style={cardStyle} onPress={() => console.log('Details page not implemented yet')}>
+      <TouchableOpacity 
+        style={cardStyle} 
+        onPress={() => router.push(`/property/${item.id}`)} // Navigate to Details
+      >
         <View style={styles.imageContainer}>
-            <Image source={{ uri: imageUrl }} style={imageStyle} resizeMode="cover" />
+            <Image source={imageUrl} style={imageStyle} resizeMode="cover" />
              {/* Heart Icon Overlay */}
             <TouchableOpacity style={styles.heartIcon}>
                  <Ionicons name="heart-outline" size={20} color={Colors.red} />
             </TouchableOpacity>
-            {/* Tag Overlay (e.g., Apartment) */}
+            {/* Tag Overlay */}
              <View style={styles.typeTag}>
-                 <Text style={styles.typeTagText}>Apartment</Text>
+                 <Text style={styles.typeTagText}>{item.category || 'House'}</Text>
              </View>
         </View>
         
@@ -93,18 +121,25 @@ export default function HomeScreen() {
           
           <View style={styles.locationRow}>
             <Ionicons name="location-outline" size={16} color={Colors.textLight} style={{marginRight: 4}}/>
-            <Text style={styles.locationTextCard} numberOfLines={1}>Phnom Penh, Cambodia (Placeholder)</Text>
+            <Text style={styles.locationTextCard} numberOfLines={1}>{item.location}</Text>
           </View>
         </View>
       </TouchableOpacity>
     );
   };
 
+  if (loading) {
+    return (
+      <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+      </View>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
       
-      {/* Main ScrollView for the whole page */}
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         
         {/* 1. Header */}
@@ -117,8 +152,8 @@ export default function HomeScreen() {
                  <Ionicons name="chevron-down" size={16} color={Colors.textLight} />
              </View>
           </View>
-          {/* Profile Image Placeholder */}
-          <TouchableOpacity onPress={() => router.push('/login' as any)}>
+          {/* Profile Image - Link to Login/Profile */}
+          <TouchableOpacity onPress={() => router.push('/profile')}> 
              <Image 
                  source={{ uri: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png' }} 
                  style={styles.profileImage} 
@@ -155,7 +190,7 @@ export default function HomeScreen() {
              />
         </View>
 
-        {/* 4. Nearby Properties Section */}
+        {/* 4. Nearby Properties (Horizontal List) */}
         <View style={styles.sectionContainer}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Nearby Properties</Text>
@@ -165,7 +200,7 @@ export default function HomeScreen() {
           </View>
           
           <FlatList
-            data={houses} // Using same data for demo
+            data={properties} // REAL DATA
             horizontal
             showsHorizontalScrollIndicator={false}
             keyExtractor={(item) => 'nearby-' + item.id.toString()}
@@ -176,27 +211,21 @@ export default function HomeScreen() {
 
         {/* 5. Ads Banner */}
         <View style={styles.adsBannerContainer}>
-             {/* Replace with a real banner image */}
             <View style={styles.dummyAdsBanner}>
                 <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold'}}>Find Your DREAM HOME</Text>
                 <Text style={{color: 'white', fontSize: 14}}>FOR SALE</Text>
             </View>
         </View>
 
-        {/* 6. Most Favorite Properties Section */}
+        {/* 6. All Properties (Vertical List) */}
         <View style={styles.sectionContainer}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Most Favorite Properties</Text>
-            <TouchableOpacity>
-              <Text style={styles.seeAllText}>See All</Text>
-            </TouchableOpacity>
+            <Text style={styles.sectionTitle}>All Properties</Text>
           </View>
 
-           {/* Using map here because it's inside a ScrollView. 
-               Nested virtualized lists (FlatList inside ScrollView) give warnings. */}
            <View style={{paddingHorizontal: 20}}>
-              {houses.map((item) => (
-                 <View key={'fav-' + item.id}>
+              {properties.map((item) => (
+                 <View key={'all-' + item.id}>
                      {renderPropertyCard({ item, horizontal: false })}
                  </View>
               ))}
@@ -415,6 +444,5 @@ const styles = StyleSheet.create({
       borderRadius: 20,
       justifyContent: 'center',
       paddingLeft: 25,
-      // In real app, use an Image component here
   }
 });

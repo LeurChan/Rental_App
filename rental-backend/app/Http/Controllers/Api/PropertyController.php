@@ -13,4 +13,8 @@ class PropertyController extends Controller
         // Fetch all properties from database
         return response()->json(Property::all());
     }
+
+    public function show($id) {
+    return Property::find($id);
+}
 }
