@@ -10,5 +10,7 @@ class Property extends Model
     use HasFactory;
     
     // Allow these fields to be saved
-    protected $fillable = ['name', 'price'];
+    protected $fillable = ['title', 'price', 
+                      'location', 'bedrooms', 'bathrooms', 'description'];
+            
 }

@@ -16,13 +16,12 @@ class AuthController extends Controller
      */
     public function register(Request $request)
     {
-        // 1. Validate the incoming data from React Native
+        // 1. Validate
         $validator = Validator::make($request->all(), [
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
             'email' => 'required|string|email|unique:users',
             'password' => 'required|string|min:6',
-            // Adding validation for your extra fields
             'dob' => 'nullable|string',
             'address' => 'nullable|string',
         ]);
@@ -34,25 +33,26 @@ class AuthController extends Controller
             ], 422);
         }
 
-        // 2. Handle the ID Card image upload
+        // 2. Handle Image
         $imagePath = null;
         if ($request->hasFile('id_card')) {
             $imagePath = $request->file('id_card')->store('id_cards', 'public');
         }
 
-        // 3. Create the user and satisfy the 'name' requirement
+        // 3. Create User (❌ REMOVED 'name' HERE)
         $user = User::create([
-    'name' => $request->first_name . ' ' . $request->last_name, // 👈 THIS LINE IS REQUIRED
-    'first_name' => $request->first_name,
-    'last_name' => $request->last_name,
-    'email' => $request->email,
-    'password' => Hash::make($request->password),
-    'dob' => $request->dob,
-    'address' => $request->address,
-    'id_card_path' => $imagePath,
-]);
+            // 'name' => ...  <-- DELETE THIS LINE! IT CAUSES THE CRASH.
+            
+            'first_name' => $request->first_name,
+            'last_name' => $request->last_name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'dob' => $request->dob,
+            'address' => $request->address,
+            'id_card_path' => $imagePath,
+        ]);
 
-        // 4. Return the token for immediate login after registration
+        // 4. Return Token
         return response()->json([
             'status' => true,
             'message' => 'User registered successfully',

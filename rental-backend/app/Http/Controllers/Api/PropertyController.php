@@ -10,11 +10,18 @@ class PropertyController extends Controller
 {
     public function index()
     {
-        // Fetch all properties from database
         return response()->json(Property::all());
     }
 
-    public function show($id) {
-    return Property::find($id);
-}
+    public function show($id) 
+    {
+        // Find the property or fail with a 404 error if it doesn't exist
+        $property = Property::find($id);
+
+        if (!$property) {
+            return response()->json(['message' => 'Property not found'], 404);
+        }
+
+        return response()->json($property);
+    }
 }

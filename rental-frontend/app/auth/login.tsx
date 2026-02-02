@@ -19,15 +19,20 @@ export default function LoginScreen() {
 
     setLoading(true);
     try {
-      // ⚠️ Use 10.0.2.2 for Android Emulator, or your PC IP for Real Phone
+      // ⚠️ Use 10.0.2.2 for Android Emulator
       const response = await axios.post('http://10.0.2.2:8000/api/login', { email, password });
 
       if (response.data.status) {
-        // Save the authentication token to database/local storage
-        await AsyncStorage.setItem('token', response.data.token);
-        router.replace('/'); 
+        // 👇👇👇 FIX: Changed 'token' to 'userToken' to match your Profile page
+        await AsyncStorage.setItem('userToken', response.data.token);
+        
+        Alert.alert("Success", "Login Successful!");
+        
+        // 👇 Redirect specifically to the Profile tab to verify login
+        router.replace('/(tabs)/profile'); 
       }
     } catch (error) {
+      console.log(error);
       Alert.alert("Login Failed", "Check your email and password.");
     } finally {
       setLoading(false);
@@ -67,13 +72,13 @@ export default function LoginScreen() {
           {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Login</Text>}
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => router.push('/forgotpassword' as any)}>
+        <TouchableOpacity onPress={() => router.push('/forgotpassword')}>
           <Text style={styles.forgotText}>Forgot Password?</Text>
         </TouchableOpacity>
 
         <View style={styles.footer}>
           <Text style={{color: '#666'}}>Don't have an account? </Text>
-          <TouchableOpacity onPress={() => router.push('/register' as any)}>
+          <TouchableOpacity onPress={() => router.push('/auth/register')}>
             <Text style={styles.linkText}>Register here.</Text>
           </TouchableOpacity>
         </View>
