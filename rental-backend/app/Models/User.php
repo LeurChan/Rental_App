@@ -2,19 +2,17 @@
 
 namespace App\Models;
 
+// 👇 1. ADD HasFactory here
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens; // 1. Add this import
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    // 2. Add HasApiTokens to the use statement
-    use HasApiTokens, Notifiable; 
+    // 👇 2. ADD HasFactory here too
+    use HasApiTokens, HasFactory, Notifiable; 
 
-    /**
-     * The attributes that are mass assignable.
-     * Ensure these match your registration form fields.
-     */
     protected $fillable = [
         'name',
         'first_name',
@@ -24,19 +22,14 @@ class User extends Authenticatable
         'dob',
         'address',
         'id_card_path',
+        'role', // 👈 3. THIS IS REQUIRED FOR ADMIN ROLE
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     */
     protected function casts(): array
     {
         return [

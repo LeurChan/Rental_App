@@ -2,24 +2,32 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use App\Models\User; // 👈 IMPORTANT: This must be here
 
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // User::factory(10)->create();
+        // 1. Create the Houses
+        $this->call(PropertySeeder::class);
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        // 2. Create the ADMIN Account
+        User::create([
+            'first_name' => 'Super',
+            'last_name'  => 'Admin',
+            'email'      => 'admin@rental.com',
+            'password'   => bcrypt('password123'),
+            'role'       => 'admin',
+        ]);
+
+        // 3. Create a Normal User
+        User::create([
+            'first_name' => 'Chan',
+            'last_name'  => 'Punleur',
+            'email'      => 'user@rental.com',
+            'password'   => bcrypt('password123'),
+            'role'       => 'user',
         ]);
     }
 }

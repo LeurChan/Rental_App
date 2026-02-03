@@ -1,8 +1,8 @@
-import React, { useState, useCallback } from 'react'; // 👈 Added useCallback
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, Image } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, Image, ScrollView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import { useRouter, useFocusEffect } from 'expo-router'; // 👈 Added useFocusEffect
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function ProfileScreen() {
@@ -10,9 +10,9 @@ export default function ProfileScreen() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  // ⚠️ Use 10.0.2.2 for Android Emulator, localhost for iOS
   const API_URL = 'http://10.0.2.2:8000/api/user';
 
-  // ✅ THIS RUNS EVERY TIME YOU VIEW THE SCREEN
   useFocusEffect(
     useCallback(() => {
       getUser();
@@ -21,7 +21,7 @@ export default function ProfileScreen() {
 
   const getUser = async () => {
     try {
-      setLoading(true); // Show loading spinner while checking
+      setLoading(true);
       const token = await AsyncStorage.getItem('userToken');
 
       if (!token) {
@@ -34,10 +34,10 @@ export default function ProfileScreen() {
         headers: { Authorization: `Bearer ${token}` }
       });
 
+      console.log("Logged in user:", response.data); 
       setUser(response.data);
     } catch (error) {
       console.log("Error fetching profile:", error);
-      // If token is invalid, clear it
       await AsyncStorage.removeItem('userToken');
       setUser(null);
     } finally {
@@ -48,7 +48,7 @@ export default function ProfileScreen() {
   const handleLogout = async () => {
     try {
       await AsyncStorage.removeItem('userToken');
-      setUser(null); // Clear user state immediately
+      setUser(null);
       Alert.alert('Logged Out', 'You have been logged out successfully.');
       router.replace('/(tabs)'); 
     } catch (error) {
@@ -85,7 +85,7 @@ export default function ProfileScreen() {
 
   // 2. LOGGED IN VIEW
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Image 
           source={{ uri: 'https://ui-avatars.com/api/?name=' + user.first_name + '+' + user.last_name + '&background=0D8ABC&color=fff' }} 
@@ -93,12 +93,42 @@ export default function ProfileScreen() {
         />
         <Text style={styles.name}>{user.first_name} {user.last_name}</Text>
         <Text style={styles.email}>{user.email}</Text>
+
+        {/* 👇 ADMIN BADGE (Visible only to Admin) */}
+        {user.role === 'admin' && (
+          <View style={styles.adminBadge}>
+            <Text style={styles.adminBadgeText}>ADMIN ACCOUNT</Text>
+          </View>
+        )}
       </View>
 
       <View style={styles.body}>
+
+        {/* 👇👇👇 ADMIN SECTION START 👇👇👇 */}
+        {user.role === 'admin' && (
+            <View style={{marginBottom: 20}}>
+                <Text style={styles.sectionTitle}>Admin Controls</Text>
+                
+                {/* 👇 THIS IS THE BUTTON THAT LIKELY CAUSED THE ERROR */}
+                <TouchableOpacity 
+                    style={[styles.menuButton, styles.adminButton]}
+                    onPress={() => router.push('/admin/dashboard' as any)}
+                >
+                    <Ionicons name="stats-chart" size={24} color="#fff" />
+                    {/* Make sure this Text tag is not missing! */}
+                    <Text style={[styles.menuText, {color: '#fff'}]}>Admin Dashboard</Text>
+                    <Ionicons name="chevron-forward" size={24} color="#fff" style={{ marginLeft: 'auto' }} />
+                </TouchableOpacity>
+            </View>
+        )}
+        {/* 👆👆👆 ADMIN SECTION END 👆👆👆 */}
+
+
+        <Text style={styles.sectionTitle}>My Account</Text>
+
         <TouchableOpacity 
           style={styles.menuButton}
-          onPress={() => router.push('/my-booking')}
+          onPress={() => router.push('/my-booking' as any)}
         >
           <Ionicons name="calendar-outline" size={24} color="#4CAF50" />
           <Text style={styles.menuText}>View My Bookings</Text>
@@ -112,7 +142,7 @@ export default function ProfileScreen() {
           <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -132,4 +162,10 @@ const styles = StyleSheet.create({
   divider: { height: 1, backgroundColor: '#eee', marginVertical: 20 },
   logoutButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FF3B30', padding: 15, borderRadius: 12 },
   logoutText: { color: '#fff', fontSize: 16, fontWeight: 'bold', marginLeft: 10 },
+
+  // Admin Styles
+  adminBadge: { backgroundColor: '#FF3B30', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10, marginTop: 10 },
+  adminBadgeText: { color: '#fff', fontSize: 10, fontWeight: 'bold' },
+  sectionTitle: { fontSize: 14, color: '#999', marginBottom: 10, marginLeft: 5, fontWeight: 'bold' },
+  adminButton: { backgroundColor: '#1a237e' },
 });

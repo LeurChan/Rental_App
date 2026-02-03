@@ -22,17 +22,34 @@ export default function LoginScreen() {
       // ⚠️ Use 10.0.2.2 for Android Emulator
       const response = await axios.post('http://10.0.2.2:8000/api/login', { email, password });
 
+      // 👇👇👇 DEBUGGING: CHECK YOUR ROLE HERE 👇👇👇
+      console.log("--------------------------------");
+      console.log("LOGIN SUCCESS!");
+      // This will print the whole user object so you can see the 'role'
+      console.log("FULL USER DATA:", response.data.user); 
+      
+      if (response.data.user && response.data.user.role) {
+          console.log("🌟 MY ROLE IS:", response.data.user.role); 
+      } else {
+          console.log("⚠️ Role not found in response.");
+      }
+      console.log("--------------------------------");
+      // 👆👆👆 END DEBUGGING 👆👆👆
+
       if (response.data.status) {
-        // 👇👇👇 FIX: Changed 'token' to 'userToken' to match your Profile page
+        // Save the token
         await AsyncStorage.setItem('userToken', response.data.token);
+        
+        // OPTIONAL: Save the user info too (useful for Profile page)
+        await AsyncStorage.setItem('userInfo', JSON.stringify(response.data.user));
         
         Alert.alert("Success", "Login Successful!");
         
-        // 👇 Redirect specifically to the Profile tab to verify login
+        // Redirect specifically to the Profile tab to verify login
         router.replace('/(tabs)/profile'); 
       }
     } catch (error) {
-      console.log(error);
+      console.log("LOGIN ERROR:", error);
       Alert.alert("Login Failed", "Check your email and password.");
     } finally {
       setLoading(false);

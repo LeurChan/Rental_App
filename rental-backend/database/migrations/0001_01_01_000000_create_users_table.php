@@ -11,14 +11,18 @@ return new class extends Migration
         // 1. TABLE FOR REGISTER & LOGIN (Users)
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('first_name'); // Add this
-            $table->string('last_name');  // Add this
+            $table->string('first_name');
+            $table->string('last_name');
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->string('dob')->nullable();      // Add this
-            $table->string('address')->nullable();  // Add this
-            $table->string('id_card_path')->nullable(); // Add this
+            $table->string('dob')->nullable();
+            $table->string('address')->nullable();
+            $table->string('id_card_path')->nullable();
+
+            // 👇 PUT IT HERE
+            $table->string('role')->default('user'); 
+
             $table->rememberToken();
             $table->timestamps();
         });
@@ -39,8 +43,6 @@ return new class extends Migration
             $table->longText('payload');
             $table->integer('last_activity')->index();
         });
-
-        
     }
 
     public function down(): void
