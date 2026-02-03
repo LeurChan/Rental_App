@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, StyleSheet, ActivityIndicator, Image, TouchableOpacity, ListRenderItem } from 'react-native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router'; // 👈 Imported useFocusEffect
 import { Ionicons } from '@expo/vector-icons';
 
-// 👇 1. Define what a Booking looks like
+// 1. Define Types
 interface Property {
   name: string;
   price: number;
@@ -20,18 +20,23 @@ interface Booking {
 }
 
 export default function MyBookings() {
-  // 👇 2. Tell useState it expects an array of Bookings
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  useEffect(() => {
-    fetchBookings();
-  }, []);
+  // 👇 2. UPDATED: This runs every time you look at the screen
+  useFocusEffect(
+    useCallback(() => {
+      fetchBookings();
+    }, [])
+  );
 
   const fetchBookings = async () => {
     try {
+      setLoading(true); // Show spinner while refreshing
       const token = await AsyncStorage.getItem('userToken');
+      
+      // Use 10.0.2.2 for Android Emulator
       const response = await axios.get('http://10.0.2.2:8000/api/bookings', {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -43,7 +48,6 @@ export default function MyBookings() {
     }
   };
 
-  // 👇 3. Fix the implicit 'any' error here by adding the type
   const renderBooking: ListRenderItem<Booking> = ({ item }) => (
     <View style={styles.card}>
       <Image 
