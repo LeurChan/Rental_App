@@ -11,18 +11,20 @@ return new class extends Migration
         Schema::create('properties', function (Blueprint $table) {
             $table->id();
             
-            // 1. Required Fields (Your App sends these)
+            // 1. Required Fields
             $table->string('name'); 
-            $table->string('location');
+            $table->string('location'); // Now storing "Phnom Penh", etc.
             $table->decimal('price', 10, 2);
             $table->text('description');
 
-            // 2. Image Field (Must be 'image_url' to match Controller)
+            // 2. Image
             $table->string('image_url')->nullable(); 
 
-            // 3. Optional Fields (App doesn't send these yet, so they must be nullable)
+            // 3. NEW FIELDS (Bed, Bath, Phone, Size)
             $table->integer('bedrooms')->nullable();
             $table->integer('bathrooms')->nullable();
+            $table->string('phone_number')->nullable(); // 👈 ADD THIS
+            $table->string('floor_area')->nullable();   // 👈 ADD THIS (e.g. "80m²")
             
             $table->timestamps();
         });

@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
+import { Picker } from '@react-native-picker/picker'; // 👈 Import Picker
 
 export default function AddProperty() {
   const router = useRouter();
@@ -14,8 +15,12 @@ export default function AddProperty() {
   const [form, setForm] = useState({
     name: '',
     price: '',
-    location: '',
+    location: 'Phnom Penh', // Default value
     description: '',
+    bedrooms: '',
+    bathrooms: '',
+    phone_number: '',
+    floor_area: ''
   });
 
   const handleInputChange = (key: string, value: string) => {
@@ -23,13 +28,6 @@ export default function AddProperty() {
   };
 
   const pickImage = async () => {
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    
-    if (permissionResult.granted === false) {
-      Alert.alert("Permission Required", "You need to allow access to your photos!");
-      return;
-    }
-
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
@@ -43,8 +41,8 @@ export default function AddProperty() {
   };
 
   const handleSubmit = async () => {
-    if (!form.name || !form.price || !form.location || !form.description) {
-      Alert.alert("Missing Info", "Please fill in Name, Price, Location, and Description.");
+    if (!form.name || !form.price || !form.description) {
+      Alert.alert("Missing Info", "Please fill in Name, Price, and Description.");
       return;
     }
 
@@ -52,13 +50,17 @@ export default function AddProperty() {
 
     try {
       const token = await AsyncStorage.getItem('userToken');
-
-      // Create FormData
       const formData = new FormData();
+      
+      // Append all text fields
       formData.append('name', form.name);
       formData.append('price', form.price);
       formData.append('location', form.location);
       formData.append('description', form.description);
+      formData.append('bedrooms', form.bedrooms);
+      formData.append('bathrooms', form.bathrooms);
+      formData.append('phone_number', form.phone_number);
+      formData.append('floor_area', form.floor_area);
 
       if (image) {
         // @ts-ignore
@@ -69,22 +71,19 @@ export default function AddProperty() {
         });
       }
 
-      // ⚠️ Use 10.0.2.2 for Android Emulator (localhost for iOS)
+      // ⚠️ Use your IP Address here!
       await axios.post('http://10.0.2.2:8000/api/properties', formData, {
         headers: { 
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data',
-        }
+        },
       });
 
       Alert.alert("Success", "Property Published!");
       router.back(); 
     } catch (error: any) {
       console.log("Upload error:", error);
-      
-      // 👇 SHOW THE REAL ERROR MESSAGE FROM SERVER
-      const message = error.response?.data?.message || "Check your internet connection";
-      Alert.alert("Upload Failed", message);
+      Alert.alert("Upload Failed", "Could not save property.");
     } finally {
       setLoading(false);
     }
@@ -119,22 +118,74 @@ export default function AddProperty() {
         onChangeText={(text) => handleInputChange('name', text)}
       />
 
-      <Text style={styles.label}>Price ($/month)</Text>
+      <View style={styles.row}>
+          <View style={styles.halfInput}>
+            <Text style={styles.label}>Price ($)</Text>
+            <TextInput 
+                style={styles.input} 
+                placeholder="500" 
+                keyboardType="numeric"
+                value={form.price}
+                onChangeText={(text) => handleInputChange('price', text)}
+            />
+          </View>
+          <View style={styles.halfInput}>
+            <Text style={styles.label}>Floor Area (m²)</Text>
+            <TextInput 
+                style={styles.input} 
+                placeholder="Ex: 80" 
+                value={form.floor_area}
+                onChangeText={(text) => handleInputChange('floor_area', text)}
+            />
+          </View>
+      </View>
+
+      {/* Row for Bed & Bath */}
+      <View style={styles.row}>
+          <View style={styles.halfInput}>
+            <Text style={styles.label}>Bedrooms</Text>
+            <TextInput 
+                style={styles.input} 
+                placeholder="2" 
+                keyboardType="numeric"
+                value={form.bedrooms}
+                onChangeText={(text) => handleInputChange('bedrooms', text)}
+            />
+          </View>
+          <View style={styles.halfInput}>
+            <Text style={styles.label}>Bathrooms</Text>
+            <TextInput 
+                style={styles.input} 
+                placeholder="1" 
+                keyboardType="numeric"
+                value={form.bathrooms}
+                onChangeText={(text) => handleInputChange('bathrooms', text)}
+            />
+          </View>
+      </View>
+
+      <Text style={styles.label}>Phone Number</Text>
       <TextInput 
         style={styles.input} 
-        placeholder="Ex: 500" 
-        keyboardType="numeric"
-        value={form.price}
-        onChangeText={(text) => handleInputChange('price', text)}
+        placeholder="Ex: 012 345 678" 
+        keyboardType="phone-pad"
+        value={form.phone_number}
+        onChangeText={(text) => handleInputChange('phone_number', text)}
       />
 
       <Text style={styles.label}>Location</Text>
-      <TextInput 
-        style={styles.input} 
-        placeholder="Ex: Phnom Penh" 
-        value={form.location}
-        onChangeText={(text) => handleInputChange('location', text)}
-      />
+      <View style={styles.pickerContainer}>
+          <Picker
+            selectedValue={form.location}
+            onValueChange={(itemValue) => handleInputChange('location', itemValue)}
+          >
+            <Picker.Item label="Phnom Penh" value="Phnom Penh" />
+            <Picker.Item label="Siem Reap" value="Siem Reap" />
+            <Picker.Item label="Sihanoukville" value="Sihanoukville" />
+            <Picker.Item label="Battambang" value="Battambang" />
+            <Picker.Item label="Kampot" value="Kampot" />
+          </Picker>
+      </View>
 
       <Text style={styles.label}>Description</Text>
       <TextInput 
@@ -146,16 +197,8 @@ export default function AddProperty() {
         onChangeText={(text) => handleInputChange('description', text)}
       />
 
-      <TouchableOpacity 
-        style={styles.submitBtn} 
-        onPress={handleSubmit}
-        disabled={loading}
-      >
-        {loading ? (
-            <ActivityIndicator color="#fff" />
-        ) : (
-            <Text style={styles.submitText}>Publish Property</Text>
-        )}
+      <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit} disabled={loading}>
+        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>Publish Property</Text>}
       </TouchableOpacity>
       
       <View style={{height: 50}} /> 
@@ -175,5 +218,10 @@ const styles = StyleSheet.create({
   placeholder: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f9f9f9' },
   placeholderText: { color: '#888', marginTop: 10 },
   submitBtn: { backgroundColor: '#1a237e', padding: 15, borderRadius: 12, alignItems: 'center', marginTop: 30 },
-  submitText: { color: '#fff', fontSize: 18, fontWeight: 'bold' }
+  submitText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+  
+  // New Styles for Layout
+  row: { flexDirection: 'row', justifyContent: 'space-between' },
+  halfInput: { width: '48%' },
+  pickerContainer: { borderWidth: 1, borderColor: '#ddd', borderRadius: 8, backgroundColor: '#f9f9f9' }
 });

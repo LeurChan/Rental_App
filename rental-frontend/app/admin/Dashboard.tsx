@@ -102,7 +102,7 @@ export default function AdminDashboard() {
             <View style={[styles.iconBox, {backgroundColor: '#ffebee'}]}>
                 <Ionicons name="settings" size={24} color="#d32f2f" />
             </View>
-            <Text style={styles.actionText}>Settings (Coming Soon)</Text>
+            <Text style={styles.actionText}>Settings</Text>
         </View>
         <Ionicons name="chevron-forward" size={20} color="#ccc" />
       </TouchableOpacity>
