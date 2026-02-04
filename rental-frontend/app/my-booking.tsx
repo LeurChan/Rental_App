@@ -2,14 +2,18 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, StyleSheet, ActivityIndicator, Image, TouchableOpacity, ListRenderItem } from 'react-native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useRouter, useFocusEffect } from 'expo-router'; // 👈 Imported useFocusEffect
+import { useRouter, useFocusEffect, Stack } from 'expo-router'; // 👈 1. Added Stack import
 import { Ionicons } from '@expo/vector-icons';
+
+// --- CONFIGURATION ---
+const STORAGE_URL = 'http://10.0.2.2:8000/storage/';
 
 // 1. Define Types
 interface Property {
   name: string;
   price: number;
-  image_path?: string;
+  image_url?: string; // 👈 Updated to match your new backend
+  location?: string;
 }
 
 interface Booking {
@@ -24,7 +28,6 @@ export default function MyBookings() {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  // 👇 2. UPDATED: This runs every time you look at the screen
   useFocusEffect(
     useCallback(() => {
       fetchBookings();
@@ -33,10 +36,9 @@ export default function MyBookings() {
 
   const fetchBookings = async () => {
     try {
-      setLoading(true); // Show spinner while refreshing
+      setLoading(true);
       const token = await AsyncStorage.getItem('userToken');
       
-      // Use 10.0.2.2 for Android Emulator
       const response = await axios.get('http://10.0.2.2:8000/api/bookings', {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -48,31 +50,41 @@ export default function MyBookings() {
     }
   };
 
-  const renderBooking: ListRenderItem<Booking> = ({ item }) => (
-    <View style={styles.card}>
-      <Image 
-        source={{ uri: item.property?.image_path 
-          ? `http://10.0.2.2:8000/storage/${item.property.image_path}` 
-          : 'https://via.placeholder.com/150' 
-        }} 
-        style={styles.image} 
-      />
-      
-      <View style={styles.details}>
-        <Text style={styles.houseName}>{item.property?.name || 'Unknown Property'}</Text>
-        <Text style={styles.price}>${item.property?.price}/month</Text>
-        
-        <View style={[styles.statusBadge, item.status === 'confirmed' ? styles.statusGreen : styles.statusOrange]}>
-            <Text style={styles.statusText}>{item.status.toUpperCase()}</Text>
-        </View>
+  const renderBooking: ListRenderItem<Booking> = ({ item }) => {
+    // 👇 Improved Image Logic (Handles both URL types)
+    let imageUrl = { uri: 'https://via.placeholder.com/150' };
+    
+    if (item.property?.image_url) {
+        if (item.property.image_url.startsWith('http')) {
+            imageUrl = { uri: item.property.image_url };
+        } else {
+            imageUrl = { uri: `${STORAGE_URL}${item.property.image_url}` };
+        }
+    }
 
-        <Text style={styles.date}>Booked on: {new Date(item.created_at).toLocaleDateString()}</Text>
+    return (
+      <View style={styles.card}>
+        <Image source={imageUrl} style={styles.image} />
+        
+        <View style={styles.details}>
+          <Text style={styles.houseName}>{item.property?.name || 'Unknown Property'}</Text>
+          <Text style={styles.price}>${item.property?.price}/month</Text>
+          
+          <View style={[styles.statusBadge, item.status === 'confirmed' ? styles.statusGreen : styles.statusOrange]}>
+              <Text style={styles.statusText}>{item.status.toUpperCase()}</Text>
+          </View>
+
+          <Text style={styles.date}>Booked on: {new Date(item.created_at).toLocaleDateString()}</Text>
+        </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <View style={styles.container}>
+      {/* 👇 2. THIS REMOVES THE TOP BAR */}
+      <Stack.Screen options={{ headerShown: false }} />
+
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={24} color="black" />
