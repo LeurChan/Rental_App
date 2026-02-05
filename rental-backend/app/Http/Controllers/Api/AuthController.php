@@ -11,9 +11,7 @@ use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
-    /**
-     * User Registration
-     */
+    // Handle Registration
     public function register(Request $request) {
         $validator = Validator::make($request->all(), [
             'first_name' => 'required|string|max:255',
@@ -31,80 +29,39 @@ class AuthController extends Controller
             'last_name' => $request->last_name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'role' => 'user', // Default role from your migration
+            'role' => 'user',
         ]);
 
-        return response()->json([
-            'status' => true,
-            'token' => $user->createToken('auth_token')->plainTextToken
-        ]);
+        return response()->json(['status' => true, 'token' => $user->createToken('auth_token')->plainTextToken]);
     }
 
-    /**
-     * User Login
-     */
+    // Handle Login
     public function login(Request $request) {
-        $credentials = $request->only('email', 'password');
-
-        if (!Auth::attempt($credentials)) {
+        if (!Auth::attempt($request->only('email', 'password'))) {
             return response()->json(['status' => false, 'message' => 'Invalid login details'], 401);
         }
 
         $user = User::where('email', $request->email)->firstOrFail();
-        
-        return response()->json([
-            'status' => true,
-            'token' => $user->createToken('auth_token')->plainTextToken,
-            'user' => $user
-        ]);
+        return response()->json(['status' => true, 'token' => $user->createToken('auth_token')->plainTextToken, 'user' => $user]);
     }
 
-    /**
-     * Update Email and Phone Number
-     */
+    // Update Email and Phone Number
     public function updateContact(Request $request) {
         $user = Auth::user();
-
-        $validator = Validator::make($request->all(), [
-            'email' => 'sometimes|email|unique:users,email,' . $user->id,
-            'phone_number' => 'sometimes|string|max:15',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['status' => false, 'errors' => $validator->errors()], 422);
-        }
-
         $user->update($request->only(['email', 'phone_number']));
-        
-        return response()->json([
-            'status' => true, 
-            'user' => $user, 
-            'message' => 'Contact info updated'
-        ]);
+        return response()->json(['status' => true, 'user' => $user, 'message' => 'Contact updated']);
     }
 
-    /**
-     * Change Password Logic
-     */
-    public function changePassword(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'current_password' => 'required',
-            'new_password' => 'required|string|min:6|confirmed', 
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['status' => false, 'errors' => $validator->errors()], 422);
-        }
-
+    // Secure Password Change
+    public function changePassword(Request $request) {
+        $request->validate(['current_password' => 'required', 'new_password' => 'required|min:6|confirmed']);
         $user = Auth::user();
 
         if (!Hash::check($request->current_password, $user->password)) {
-            return response()->json(['status' => false, 'message' => 'Current password does not match'], 400);
+            return response()->json(['status' => false, 'message' => 'Incorrect current password'], 400);
         }
 
         $user->update(['password' => Hash::make($request->new_password)]);
-
-        return response()->json(['status' => true, 'message' => 'Password updated successfully']);
+        return response()->json(['status' => true, 'message' => 'Password updated']);
     }
 }
