@@ -109,16 +109,16 @@ export default function ProfileScreen() {
             <View style={{marginBottom: 20}}>
                 <Text style={styles.sectionTitle}>Admin Controls</Text>
                 
-                {/* 👇 THIS IS THE BUTTON THAT LIKELY CAUSED THE ERROR */}
+                {/* 1. Admin Dashboard Button */}
                 <TouchableOpacity 
                     style={[styles.menuButton, styles.adminButton]}
                     onPress={() => router.push('/admin/dashboard' as any)}
                 >
                     <Ionicons name="stats-chart" size={24} color="#fff" />
-                    {/* Make sure this Text tag is not missing! */}
                     <Text style={[styles.menuText, {color: '#fff'}]}>Admin Dashboard</Text>
                     <Ionicons name="chevron-forward" size={24} color="#fff" style={{ marginLeft: 'auto' }} />
                 </TouchableOpacity>
+
             </View>
         )}
         {/* 👆👆👆 ADMIN SECTION END 👆👆👆 */}
