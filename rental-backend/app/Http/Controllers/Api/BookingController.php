@@ -10,20 +10,26 @@ class BookingController extends Controller
 {
     // 1. Create Booking (For User)
     public function store(Request $request)
-    {
-        $request->validate([
-            'property_id' => 'required|exists:properties,id',
-        ]);
+{
+    $request->validate([
+        'property_id' => 'required|exists:properties,id',
+        'phone_number' => 'required',
+        'start_date' => 'required|date',
+        'end_date' => 'required|date',
+    ]);
 
-        $booking = Booking::create([
-            'user_id' => $request->user()->id,
-            'property_id' => $request->property_id,
-            'start_date' => now(), // Default to today
-            'status' => 'pending'
-        ]);
+    $booking = Booking::create([
+        'user_id' => $request->user()->id, // 👈 Required for auth:sanctum
+        'property_id' => $request->property_id,
+        'phone_number' => $request->phone_number,
+        'start_date' => $request->start_date,
+        'end_date' => $request->end_date,
+        'notes' => $request->notes,
+        'status' => 'pending'
+    ]);
 
-        return response()->json(['message' => 'Booking successful!', 'booking' => $booking], 201);
-    }
+    return response()->json(['status' => true, 'message' => 'Booking successful!', 'booking' => $booking]);
+}
 
     // 2. Get My Bookings (For User)
     public function index(Request $request)

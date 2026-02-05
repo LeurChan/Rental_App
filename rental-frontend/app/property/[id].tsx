@@ -13,9 +13,8 @@ import {
 } from 'react-native';
 import axios from 'axios';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// --- CONFIGURATION ---
-// ⚠️ Ensure this matches your actual backend URL
 const API_URL = 'http://10.0.2.2:8000/api/properties';
 const STORAGE_URL = 'http://10.0.2.2:8000/storage/';
 
@@ -38,9 +37,11 @@ export default function PropertyDetails() {
   
   const [house, setHouse] = useState<Property | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     fetchDetails();
+    checkUserRole();
   }, [id]);
 
   const fetchDetails = async () => {
@@ -49,16 +50,59 @@ export default function PropertyDetails() {
       setHouse(response.data);
     } catch (err) {
       console.log("Error fetching details:", err);
-      Alert.alert("Error", "Failed to load property details");
     } finally {
       setLoading(false);
     }
   };
 
+  const checkUserRole = async () => {
+    try {
+      const userData = await AsyncStorage.getItem('userInfo');
+      if (userData) {
+        const user = JSON.parse(userData);
+        if (user.role === 'admin') {
+          setIsAdmin(true);
+        }
+      }
+    } catch (error) {
+      console.log("Role Check Error:", error);
+    }
+  };
+
+  // 👇 DELETE LOGIC
+  const handleDelete = async () => {
+    Alert.alert(
+      "Delete Property",
+      "Are you sure you want to delete this listing? This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Delete", 
+          style: "destructive", 
+          onPress: async () => {
+            try {
+              const token = await AsyncStorage.getItem('userToken');
+              const response = await axios.delete(`${API_URL}/${id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+              });
+
+              if (response.status === 200 || response.data.status) {
+                Alert.alert("Success", "Property deleted successfully.");
+                router.replace('/'); // Redirect to home after deletion
+              }
+            } catch (error) {
+              console.log("Delete Error:", error);
+              Alert.alert("Error", "Could not delete property.");
+            }
+          }
+        }
+      ]
+    );
+  };
+
   if (loading) return <ActivityIndicator size="large" color="#007AFF" style={styles.center} />;
   if (!house) return <Text style={styles.center}>Property not found</Text>;
 
-  // Image Logic
   let imageUrl = { uri: 'https://via.placeholder.com/400x300' };
   if (house.image_url) {
     imageUrl = house.image_url.startsWith('http') 
@@ -71,7 +115,6 @@ export default function PropertyDetails() {
       <Stack.Screen options={{ headerShown: false }} />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Image Header */}
         <View style={styles.imageContainer}>
             <Image source={imageUrl} style={styles.image} />
             <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
@@ -79,7 +122,6 @@ export default function PropertyDetails() {
             </TouchableOpacity>
         </View>
 
-        {/* Details Container */}
         <View style={styles.detailsContainer}>
           <Text style={styles.title}>{house.name}</Text>
           <Text style={styles.price}>${house.price} <Text style={{fontSize:16, color:'#666'}}>/ month</Text></Text>
@@ -89,7 +131,6 @@ export default function PropertyDetails() {
             <Text style={styles.location}>{house.location}</Text>
           </View>
 
-          {/* Features Row */}
           <View style={styles.featuresRow}>
             <View style={styles.featureItem}>
               <Ionicons name="bed-outline" size={24} color="#007AFF" />
@@ -110,109 +151,87 @@ export default function PropertyDetails() {
         </View>
       </ScrollView>
 
-
-      {/* --- NEW USER ACTION FOOTER (Call & Book) --- */}
+      {/* FOOTER BUTTONS */}
       <View style={styles.footer}>
-        
-        {/* Button 1: Call Now */}
-        <TouchableOpacity 
-          style={styles.callBtn} 
-          onPress={() => {
-             const phone = house.phone_number || '0123456789'; // Default if empty
-             Linking.openURL(`tel:${phone}`);
-          }}
-        >
-          <Ionicons name="call-outline" size={20} color="#007AFF" />
-          <Text style={styles.callBtnText}>Call Now</Text>
-        </TouchableOpacity>
+        {isAdmin ? (
+          <View style={{ flex: 1, flexDirection: 'column', gap: 10 }}>
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+                <TouchableOpacity 
+                    style={styles.outlineBtn}
+                    onPress={() => router.push({ pathname: '/admin/booking', params: { property_id: house.id } })}
+                >
+                    <Ionicons name="list-outline" size={20} color="#007AFF" />
+                    <Text style={styles.outlineBtnText}>Bookings</Text>
+                </TouchableOpacity>
 
-        {/* Button 2: Book Now */}
-        <TouchableOpacity 
-          style={styles.bookBtn} 
-          onPress={() => {
-            // Navigate to Booking Screen with the Property ID
-            router.push({
-                pathname: '/booking/create', // ⚠️ Make sure to create this file next!
-                params: { propertyId: house.id }
-            });
-          }}
-        >
-          <Text style={styles.bookBtnText}>Book Now</Text>
-        </TouchableOpacity>
+                <TouchableOpacity 
+                    style={styles.fillBtn}
+                    onPress={() => router.push({ pathname: '/admin/edit-property', params: { id: house.id } })}
+                >
+                    <Ionicons name="create-outline" size={20} color="#fff" />
+                    <Text style={styles.fillBtnText}>Edit</Text>
+                </TouchableOpacity>
+            </View>
 
+            <TouchableOpacity 
+                style={[styles.fillBtn, { backgroundColor: '#FF3B30' }]} 
+                onPress={handleDelete}
+            >
+                <Ionicons name="trash-outline" size={20} color="#fff" />
+                <Text style={styles.fillBtnText}>Delete Listing</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <>
+            <TouchableOpacity 
+              style={styles.outlineBtn} 
+              onPress={() => {
+                  const phone = house.phone_number || '0123456789';
+                  Linking.openURL(`tel:${phone}`);
+              }}
+            >
+              <Ionicons name="call-outline" size={20} color="#007AFF" />
+              <Text style={styles.outlineBtnText}>Call Now</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.fillBtn} 
+              onPress={() => {
+                router.push({
+                    pathname: '/booking/create',
+                    params: { propertyId: house.id, price: house.price }
+                });
+              }}
+            >
+              <Text style={styles.fillBtnText}>Book Now</Text>
+            </TouchableOpacity>
+          </>
+        )}
       </View>
     </View>
   );
 }
 
-// --- STYLES ---
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  scrollContent: { paddingBottom: 100 },
+  scrollContent: { paddingBottom: 160 }, // Increased padding for extra admin button
   imageContainer: { position: 'relative' },
   image: { width: '100%', height: 300, resizeMode: 'cover' },
-  backButton: { 
-    position: 'absolute', top: 50, left: 20, zIndex: 10, 
-    backgroundColor: 'white', padding: 8, borderRadius: 20, elevation: 5 
-  },
-  detailsContainer: { 
-    padding: 20, backgroundColor: '#fff', 
-    borderTopLeftRadius: 30, borderTopRightRadius: 30, marginTop: -30, elevation: 5 
-  },
+  backButton: { position: 'absolute', top: 50, left: 20, zIndex: 10, backgroundColor: 'white', padding: 8, borderRadius: 20, elevation: 5 },
+  detailsContainer: { padding: 20, backgroundColor: '#fff', borderTopLeftRadius: 30, borderTopRightRadius: 30, marginTop: -30, elevation: 5 },
   title: { fontSize: 24, fontWeight: 'bold', marginBottom: 10, color: '#333' },
   price: { fontSize: 22, fontWeight: '700', color: '#007AFF', marginBottom: 15 },
   locationRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
   location: { fontSize: 16, color: '#666', marginLeft: 5 },
-  featuresRow: { 
-    flexDirection: 'row', justifyContent: 'space-between', marginBottom: 25, 
-    paddingVertical: 15, borderTopWidth: 1, borderBottomWidth: 1, borderColor: '#eee' 
-  },
+  featuresRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 25, paddingVertical: 15, borderTopWidth: 1, borderBottomWidth: 1, borderColor: '#eee' },
   featureItem: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   featureText: { fontSize: 14, fontWeight: '600', color: '#333' },
   sectionTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 10, marginTop: 10, color: '#333' },
   description: { fontSize: 16, lineHeight: 24, color: '#555' },
-  
-  // --- Updated Footer Styles ---
-  footer: { 
-    position: 'absolute', bottom: 0, left: 0, right: 0, 
-    backgroundColor: '#fff', padding: 20, borderTopWidth: 1, borderTopColor: '#eee', 
-    flexDirection: 'row', gap: 12,
-    elevation: 10, // Shadow for Android
-    shadowColor: '#000', // Shadow for iOS
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  callBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 14,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: '#007AFF', // Blue Outline
-    backgroundColor: '#fff',
-  },
-  callBtnText: {
-    color: '#007AFF',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginLeft: 8,
-  },
-  bookBtn: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 14,
-    borderRadius: 12,
-    backgroundColor: '#007AFF', // Solid Blue
-    elevation: 2,
-  },
-  bookBtnText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
+  footer: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#fff', padding: 20, borderTopWidth: 1, borderTopColor: '#eee', elevation: 10, shadowColor: '#000', shadowOffset: { width: 0, height: -2 }, shadowOpacity: 0.1, shadowRadius: 4 },
+  outlineBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, borderRadius: 12, borderWidth: 1.5, borderColor: '#007AFF', backgroundColor: '#fff', gap: 8 },
+  outlineBtnText: { color: '#007AFF', fontSize: 16, fontWeight: 'bold' },
+  fillBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, borderRadius: 12, backgroundColor: '#007AFF', elevation: 2, gap: 8 },
+  fillBtnText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
 });

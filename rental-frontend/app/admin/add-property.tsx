@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
-import { Picker } from '@react-native-picker/picker'; // 👈 Import Picker
+import { Picker } from '@react-native-picker/picker';
 
 export default function AddProperty() {
   const router = useRouter();
@@ -14,8 +14,9 @@ export default function AddProperty() {
 
   const [form, setForm] = useState({
     name: '',
+    category: 'Apartment', // 👈 1. Added category default
     price: '',
-    location: 'Phnom Penh', // Default value
+    location: 'Phnom Penh',
     description: '',
     bedrooms: '',
     bathrooms: '',
@@ -52,8 +53,8 @@ export default function AddProperty() {
       const token = await AsyncStorage.getItem('userToken');
       const formData = new FormData();
       
-      // Append all text fields
       formData.append('name', form.name);
+      formData.append('category', form.category); // 👈 2. Send category to backend
       formData.append('price', form.price);
       formData.append('location', form.location);
       formData.append('description', form.description);
@@ -71,7 +72,6 @@ export default function AddProperty() {
         });
       }
 
-      // ⚠️ Use your IP Address here!
       await axios.post('http://10.0.2.2:8000/api/properties', formData, {
         headers: { 
           Authorization: `Bearer ${token}`,
@@ -118,6 +118,21 @@ export default function AddProperty() {
         onChangeText={(text) => handleInputChange('name', text)}
       />
 
+      {/* 👇 3. NEW CATEGORY PICKER */}
+      <Text style={styles.label}>Category</Text>
+      <View style={styles.pickerContainer}>
+          <Picker
+            selectedValue={form.category}
+            onValueChange={(itemValue) => handleInputChange('category', itemValue)}
+          >
+            <Picker.Item label="Apartment" value="Apartment" />
+            <Picker.Item label="House" value="House" />
+            <Picker.Item label="Villa" value="Villa" />
+            <Picker.Item label="Room" value="Room" />
+            <Picker.Item label="Penthouse" value="Penthouse" />
+          </Picker>
+      </View>
+
       <View style={styles.row}>
           <View style={styles.halfInput}>
             <Text style={styles.label}>Price ($)</Text>
@@ -140,7 +155,6 @@ export default function AddProperty() {
           </View>
       </View>
 
-      {/* Row for Bed & Bath */}
       <View style={styles.row}>
           <View style={styles.halfInput}>
             <Text style={styles.label}>Bedrooms</Text>
@@ -220,7 +234,6 @@ const styles = StyleSheet.create({
   submitBtn: { backgroundColor: '#1a237e', padding: 15, borderRadius: 12, alignItems: 'center', marginTop: 30 },
   submitText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
   
-  // New Styles for Layout
   row: { flexDirection: 'row', justifyContent: 'space-between' },
   halfInput: { width: '48%' },
   pickerContainer: { borderWidth: 1, borderColor: '#ddd', borderRadius: 8, backgroundColor: '#f9f9f9' }

@@ -36,4 +36,10 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+public function favoriteProperties()
+{
+    // This looks at the 'favorites' table to connect Users to Properties
+    return $this->belongsToMany(Property::class, 'favorites');
+}
 }

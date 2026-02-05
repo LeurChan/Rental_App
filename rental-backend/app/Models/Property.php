@@ -11,10 +11,17 @@ class Property extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name', 'price', 'location', 'description', 
-        'image_url', 'bedrooms', 'bathrooms', 
-        'phone_number', 'floor_area'
-    ];
+    'name',
+    'price',
+    'location',
+    'category', // 👈 Add this!
+    'bedrooms',
+    'bathrooms',
+    'floor_area',
+    'description',
+    'image_url',
+    // ... any other fields
+];
 
     // 👇 Add this to automatically format the image path
     protected $appends = ['full_image_path'];

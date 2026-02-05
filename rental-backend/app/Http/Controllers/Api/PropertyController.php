@@ -27,10 +27,10 @@ class PropertyController extends Controller
         return response()->json($property);
     }
 
-    // 3. Create New Property (UPDATED)
+    // 3. Create New Property (UPDATED with Category)
     public function store(Request $request)
     {
-        // A. Validate incoming data (Added new fields)
+        // A. Validate incoming data
         $validated = $request->validate([
             'name' => 'required|string',
             'price' => 'required|numeric',
@@ -39,6 +39,7 @@ class PropertyController extends Controller
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             
             // 👇 NEW VALIDATION RULES
+            'category' => 'nullable|string', // 👈 Added Category
             'bedrooms' => 'nullable|integer',
             'bathrooms' => 'nullable|integer',
             'phone_number' => 'nullable|string',
@@ -46,11 +47,9 @@ class PropertyController extends Controller
         ]);
 
         // B. Handle Image Upload
-        $imageUrl = null; // Default to null if no image
+        $imageUrl = null; 
 
         if ($request->hasFile('image')) {
-            // Save just the filename (e.g. properties/abc.jpg)
-            // This is cleaner for the database
             $path = $request->file('image')->store('properties', 'public');
             $imageUrl = $path; 
         }
@@ -64,6 +63,7 @@ class PropertyController extends Controller
             'image_url' => $imageUrl, 
             
             // 👇 SAVE NEW FIELDS
+            'category' => $request->category ?? 'House', // 👈 Saves Category (defaults to House)
             'bedrooms' => $request->bedrooms,
             'bathrooms' => $request->bathrooms,
             'phone_number' => $request->phone_number,
@@ -74,18 +74,28 @@ class PropertyController extends Controller
     }
 
     // 4. Delete Property
-    public function destroy($id)
-    {
-        $property = Property::find($id);
+    // app/Http/Controllers/Api/PropertyController.php
 
-        if (!$property) {
-            return response()->json(['message' => 'Property not found'], 404);
-        }
+public function destroy($id)
+{
+    $property = Property::find($id);
 
-        $property->delete();
-
-        return response()->json(['message' => 'Property deleted successfully']);
+    if (!$property) {
+        return response()->json(['status' => false, 'message' => 'Property not found'], 404);
     }
+
+    // Optional: Delete the image file from storage if it exists
+    if ($property->image_url) {
+        Storage::disk('public')->delete($property->image_url);
+    }
+
+    $property->delete();
+
+    return response()->json([
+        'status' => true, 
+        'message' => 'Property deleted successfully'
+    ]);
+}
 
     // 5. Update Existing Property
     public function update(Request $request, $id)
@@ -101,6 +111,9 @@ class PropertyController extends Controller
             'price' => 'required|numeric',
             'location' => 'required|string',
             'description' => 'required|string',
+            
+            // 👇 Allow updating category too
+            'category' => 'nullable|string', 
             'bedrooms' => 'nullable|integer',
             'bathrooms' => 'nullable|integer',
             'floor_area' => 'nullable|string',

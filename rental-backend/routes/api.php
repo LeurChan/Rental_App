@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\PropertyController; 
 use App\Http\Controllers\Api\BookingController;
 use App\Http\Controllers\Api\AdminController;
+use App\Http\Controllers\Api\FavoriteController;
 
 /*
 |--------------------------------------------------------------------------
@@ -18,6 +19,7 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/home', [PropertyController::class, 'index']); 
 Route::get('/properties/{id}', [PropertyController::class, 'show']); 
+
 
 // Moved here to allow property updates without auth issues if intended
 Route::put('/properties/{id}', [PropertyController::class, 'update']); 
@@ -39,9 +41,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/admin/stats', [AdminController::class, 'stats']); 
     Route::post('/properties', [PropertyController::class, 'store']); 
     Route::get('/admin/bookings', [BookingController::class, 'indexAdmin']);
+    Route::delete('/properties/{id}', [PropertyController::class, 'destroy']);
 
     // --- BOOKING ROUTES ---
     Route::post('/bookings', [BookingController::class, 'store']); 
     Route::get('/bookings', [BookingController::class, 'index']);  
     Route::put('/bookings/{id}', [BookingController::class, 'update']);
+
+    Route::post('/favorites/toggle', [FavoriteController::class, 'toggleFavorite']);
+    Route::get('/user/favorites', [FavoriteController::class, 'getUserFavorites']);
+    Route::get('/favorites', [FavoriteController::class, 'index']);
 });

@@ -6,24 +6,29 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
-{
-    Schema::create('bookings', function (Blueprint $table) {
-        $table->id();
-        $table->foreignId('user_id')->constrained()->onDelete('cascade'); // Who booked it?
-        $table->foreignId('property_id')->constrained()->onDelete('cascade'); // Which house?
-        $table->date('start_date')->nullable(); // Optional for now
-        $table->string('status')->default('pending'); // pending, confirmed, cancelled
-        $table->timestamps();
-    });
-}
+    {
+        Schema::create('bookings', function (Blueprint $table) {
+            $table->id();
+            // Who booked it?
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            // Which house?
+            $table->foreignId('property_id')->constrained()->onDelete('cascade');
+            
+            // Booking Details
+            $table->date('start_date');
+            $table->date('end_date');
+            $table->decimal('total_price', 10, 2);
+            $table->string('status')->default('pending'); // pending, approved, rejected
+            
+            // Contact Info
+            $table->string('phone_number')->nullable();
+            $table->text('notes')->nullable();
 
-    /**
-     * Reverse the migrations.
-     */
+            $table->timestamps();
+        });
+    }
+
     public function down(): void
     {
         Schema::dropIfExists('bookings');

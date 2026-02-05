@@ -10,11 +10,13 @@ import {
   Image,
   ScrollView,
   ActivityIndicator,
-  RefreshControl 
+  RefreshControl,
+  Alert
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage'; // 👈 Added for token
 
 // 👇 Import Styles
 import { styles, Colors } from './home.styles';
@@ -22,8 +24,8 @@ import { styles, Colors } from './home.styles';
 // --- CONFIGURATION ---
 const API_URL = 'http://10.0.2.2:8000/api/home'; 
 const STORAGE_URL = 'http://10.0.2.2:8000/storage/'; 
+const FAVORITE_TOGGLE_URL = 'http://10.0.2.2:8000/api/favorites/toggle'; // 👈 Added
 
-// 1. Updated Interface (Added Bed, Bath, Area)
 interface Property {
   id: number;
   name: string;
@@ -31,34 +33,83 @@ interface Property {
   location: string;
   image_url?: string;
   category?: string;
-  bedrooms?: number;   // 👈 Added
-  bathrooms?: number;  // 👈 Added
-  floor_area?: string; // 👈 Added
+  bedrooms?: number;   
+  bathrooms?: number;  
+  floor_area?: string; 
 }
 
 export default function HomeScreen() {
   const router = useRouter();
   const [properties, setProperties] = useState<Property[]>([]);
+  const [filteredProperties, setFilteredProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchText, setSearchText] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('Apartment');
-
-  const categories = ['Apartment', 'Room', 'Penthouse', 'Duplex'];
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  
+  // 👇 1. Added state for favorites
+  const [favorites, setFavorites] = useState<number[]>([]);
+  
+  const categories = ['All', 'House', 'Apartment', 'Room', 'Villa', 'Penthouse'];
 
   useEffect(() => {
     fetchProperties();
   }, []);
 
+  useEffect(() => {
+    let result = properties;
+
+    if (selectedCategory !== 'All') {
+      result = result.filter(item => item.category === selectedCategory);
+    }
+
+    if (searchText) {
+      result = result.filter(item => 
+        item.name.toLowerCase().includes(searchText.toLowerCase()) || 
+        item.location.toLowerCase().includes(searchText.toLowerCase())
+      );
+    }
+
+    setFilteredProperties(result);
+  }, [properties, selectedCategory, searchText]);
+
   const fetchProperties = async () => {
     try {
       const response = await axios.get(API_URL);
       setProperties(response.data);
+      
+      // If your API returns user's current favorites, set them here:
+      // setFavorites(response.data.user_favorites || []);
     } catch (error) {
       console.error("Error fetching properties:", error);
     } finally {
       setLoading(false);
       setRefreshing(false);
+    }
+  };
+
+  // 👇 2. Toggle Favorite Function
+  const toggleFavorite = async (propertyId: number) => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      if (!token) {
+        Alert.alert("Login Required", "Please login to favorite properties.");
+        return;
+      }
+
+      const response = await axios.post(
+        FAVORITE_TOGGLE_URL,
+        { property_id: propertyId },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (response.data.is_favorite) {
+        setFavorites([...favorites, propertyId]);
+      } else {
+        setFavorites(favorites.filter(id => id !== propertyId));
+      }
+    } catch (error) {
+      console.error("Favorite toggle error:", error);
     }
   };
 
@@ -81,10 +132,12 @@ export default function HomeScreen() {
     </TouchableOpacity>
   );
 
-  // 2. Updated Card Render (Now shows Icons!)
   const renderPropertyCard = ({ item, horizontal = false }: { item: Property, horizontal?: boolean }) => {
     const cardStyle = horizontal ? styles.cardHorizontal : styles.cardVertical;
     const imageStyle = horizontal ? styles.cardImageHorizontal : styles.cardImageVertical;
+    
+    // 👇 3. Check if current item is favorited
+    const isFavorited = favorites.includes(item.id);
 
     let imageUrl = { uri: 'https://via.placeholder.com/400x300.png?text=No+Image' };
     
@@ -99,15 +152,25 @@ export default function HomeScreen() {
     return (
       <TouchableOpacity 
         style={cardStyle} 
-        onPress={() => router.push(`/property/${item.id}`)}
+        onPress={() => router.push({ pathname: '/property/[id]', params: { id: item.id } })}
       >
         <View style={styles.imageContainer}>
             <Image source={imageUrl} style={imageStyle} resizeMode="cover" />
-            <TouchableOpacity style={styles.heartIcon}>
-                 <Ionicons name="heart-outline" size={20} color={Colors.red} />
+            
+            {/* 👇 4. Updated Favorite Icon with Logic */}
+            <TouchableOpacity 
+              style={styles.heartIcon} 
+              onPress={() => toggleFavorite(item.id)}
+            >
+                 <Ionicons 
+                   name={isFavorited ? "heart" : "heart-outline"} 
+                   size={20} 
+                   color={isFavorited ? "#ff0000" : Colors.red} 
+                 />
             </TouchableOpacity>
+
              <View style={styles.typeTag}>
-                 <Text style={styles.typeTagText}>{item.category || 'House'}</Text>
+                 <Text style={styles.typeTagText}>{item.category || 'Property'}</Text>
              </View>
         </View>
         
@@ -115,10 +178,7 @@ export default function HomeScreen() {
           <Text style={styles.houseTitle} numberOfLines={1}>{item.name}</Text>
           <Text style={styles.price}>${item.price} <Text style={styles.priceSuffix}>/ month</Text></Text>
           
-          {/* 👇 NEW SECTION: Bed, Bath, Area Icons */}
           <View style={{flexDirection: 'row', marginBottom: 8, marginTop: 4}}>
-              
-              {/* Bedroom Icon */}
               {item.bedrooms ? (
                   <View style={{flexDirection: 'row', alignItems: 'center', marginRight: 10}}>
                       <Ionicons name="bed-outline" size={16} color={Colors.textLight} />
@@ -126,7 +186,6 @@ export default function HomeScreen() {
                   </View>
               ) : null}
 
-              {/* Bathroom Icon */}
               {item.bathrooms ? (
                   <View style={{flexDirection: 'row', alignItems: 'center', marginRight: 10}}>
                       <Ionicons name="water-outline" size={16} color={Colors.textLight} />
@@ -134,16 +193,13 @@ export default function HomeScreen() {
                   </View>
               ) : null}
 
-              {/* Area Icon */}
               {item.floor_area ? (
                   <View style={{flexDirection: 'row', alignItems: 'center'}}>
                       <Ionicons name="expand-outline" size={16} color={Colors.textLight} />
                       <Text style={{marginLeft: 4, color: Colors.textLight, fontSize: 12}}>{item.floor_area}m²</Text>
                   </View>
               ) : null}
-
           </View>
-          {/* 👆 End of New Section */}
 
           <View style={styles.locationRow}>
             <Ionicons name="location-outline" size={16} color={Colors.textLight} style={{marginRight: 4}}/>
@@ -174,17 +230,12 @@ export default function HomeScreen() {
         }
       >
         
-        {/* Header */}
         <View style={styles.header}>
           <View>
-              <Text style={{fontSize: 12, color: Colors.textLight}}>Location</Text>
-              <View style={{flexDirection:'row', alignItems:'center', marginTop: 4}}>
-                  <Ionicons name="location-sharp" size={20} color={Colors.primary} />
-                  <Text style={styles.headerLocationText}>Phnom Penh, Cambodia</Text>
-                  <Ionicons name="chevron-down" size={16} color={Colors.textLight} />
-              </View>
+              <Text style={{fontSize: 26, fontWeight: 'bold', color: Colors.primary}}>House Rental</Text>
+              <Text style={{fontSize: 14, color: Colors.textLight}}>Find your perfect home</Text>
           </View>
-          <TouchableOpacity onPress={() => router.push('/profile')}> 
+          <TouchableOpacity onPress={() => router.push('/(tabs)/profile')}> 
               <Image 
                   source={{ uri: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png' }} 
                   style={styles.profileImage} 
@@ -192,7 +243,6 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Search Bar */}
         <View style={styles.searchContainerRow}>
           <View style={styles.searchBar}>
             <Ionicons name="search-outline" size={24} color={Colors.textLight} style={styles.searchIcon} />
@@ -209,9 +259,8 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Categories */}
         <View>
-             <FlatList
+              <FlatList
                data={categories}
                horizontal
                showsHorizontalScrollIndicator={false}
@@ -221,26 +270,30 @@ export default function HomeScreen() {
              />
         </View>
 
-        {/* Nearby Properties */}
         <View style={styles.sectionContainer}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Nearby Properties</Text>
-            <TouchableOpacity>
+            <Text style={styles.sectionTitle}>
+                {selectedCategory === 'All' ? 'Nearby Properties' : `${selectedCategory}s`}
+            </Text>
+            <TouchableOpacity onPress={() => setSelectedCategory('All')}>
               <Text style={styles.seeAllText}>See All</Text>
             </TouchableOpacity>
           </View>
           
-          <FlatList
-            data={properties}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            keyExtractor={(item) => 'nearby-' + item.id.toString()}
-            renderItem={({ item }) => renderPropertyCard({ item, horizontal: true })}
-            contentContainerStyle={{ paddingLeft: 20, paddingBottom: 10 }}
-          />
+          {filteredProperties.length === 0 ? (
+             <Text style={{marginLeft: 20, color: '#999', marginTop: 10}}>No properties found.</Text>
+          ) : (
+              <FlatList
+                data={filteredProperties}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                keyExtractor={(item) => 'nearby-' + item.id.toString()}
+                renderItem={({ item }) => renderPropertyCard({ item, horizontal: true })}
+                contentContainerStyle={{ paddingLeft: 20, paddingBottom: 10 }}
+              />
+          )}
         </View>
 
-        {/* Ads Banner */}
         <View style={styles.adsBannerContainer}>
             <View style={styles.dummyAdsBanner}>
                 <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold'}}>Find Your DREAM HOME</Text>
@@ -248,14 +301,13 @@ export default function HomeScreen() {
             </View>
         </View>
 
-        {/* All Properties */}
         <View style={styles.sectionContainer}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>All Properties</Text>
           </View>
 
            <View style={{paddingHorizontal: 20}}>
-              {properties.map((item) => (
+              {filteredProperties.map((item) => (
                  <View key={'all-' + item.id}>
                      {renderPropertyCard({ item, horizontal: false })}
                  </View>

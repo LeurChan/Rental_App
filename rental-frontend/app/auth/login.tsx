@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { 
+  View, 
+  Text, 
+  TextInput, 
+  TouchableOpacity, 
+  StyleSheet, 
+  ActivityIndicator, 
+  Alert 
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -12,7 +20,6 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-    // 1. Basic Validation
     if (!email || !password) {
       Alert.alert("Error", "Please enter both email and password.");
       return;
@@ -20,34 +27,42 @@ export default function LoginScreen() {
 
     setLoading(true);
     try {
-      // ⚠️ Use 10.0.2.2 for Android Emulator, or your Laptop IP for real phone
-      const response = await axios.post('http://10.0.2.2:8000/api/login', { email, password });
+      // ⚠️ Use 10.0.2.2 for Android Emulator
+      const response = await axios.post('http://10.0.2.2:8000/api/login', { 
+        email: email.trim(), 
+        password: password.trim() 
+      });
 
-      if (response.data.status) {
-        // 2. Save Token
-        await AsyncStorage.setItem('userToken', response.data.token);
-        
-        // 3. CHECK ROLE & REDIRECT 🚀
-        const role = response.data.role; 
-        console.log("LOGIN SUCCESS. ROLE:", role);
+      console.log("SERVER RESPONSE:", response.data); 
 
-        if (role === 'admin') {
-            Alert.alert("Welcome Admin", "Redirecting to Dashboard...");
-            router.replace('/admin/dashboard'); 
-        } else {
-            // 👇 FIXED: Redirects to app/(tabs)/index.tsx
-            router.replace('/(tabs)'); 
+      if (response.data.status === true) {
+        const { token, user } = response.data;
+
+        if (!user) {
+            Alert.alert("Error", "Login successful but no User Data received.");
+            return;
         }
+
+        // Save Data
+        await AsyncStorage.setItem('userToken', token);
+        await AsyncStorage.setItem('userInfo', JSON.stringify(user));
+
+        Alert.alert("Success", `Welcome back, ${user.first_name || 'User'}!`);
+        
+        // Navigation Logic
+        if (user.role === 'admin') {
+            router.replace('/');
+        } else {
+            // ✅ Correct path for (tabs)/index.tsx
+            router.replace('/'); 
+        }
+
+      } else {
+        Alert.alert("Login Failed", response.data.message || "Invalid credentials");
       }
     } catch (error: any) {
-      console.log("LOGIN ERROR:", error.response?.data);
-      const serverMessage = error.response?.data?.message || "Login Failed";
-      
-      if (error.response?.status === 401) {
-          Alert.alert("Failed", "Incorrect Email or Password");
-      } else {
-          Alert.alert("Error", serverMessage);
-      }
+      console.log("LOGIN ERROR:", error);
+      Alert.alert("Error", "Could not connect to server.");
     } finally {
       setLoading(false);
     }
@@ -80,26 +95,18 @@ export default function LoginScreen() {
             value={password} 
             onChangeText={setPassword} 
             secureTextEntry 
+            autoCapitalize="none"
           />
         </View>
 
-        <TouchableOpacity onPress={handleLogin} style={styles.btn} disabled={loading}>
+        {/* Login Button */}
+        <TouchableOpacity onPress={handleLogin} style={styles.btn}>
           {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Login</Text>}
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => router.push('/forgotpassword')}>
-          <Text style={styles.forgotText}>Forgot Password?</Text>
-        </TouchableOpacity>
-
-        <View style={styles.footer}>
-          <Text style={{color: '#666'}}>Don't have an account? </Text>
-          <TouchableOpacity onPress={() => router.push('/auth/register')}>
-            <Text style={styles.linkText}>Register here.</Text>
-          </TouchableOpacity>
-        </View>
-
-        <TouchableOpacity onPress={() => router.replace('/')} style={{marginTop: 20, alignItems: 'center'}}>
-           <Text style={{color: '#999', fontSize: 14}}>Back to Home</Text>
+        {/* Register Link */}
+        <TouchableOpacity onPress={() => router.push('/auth/register')} style={styles.footer}>
+           <Text style={styles.linkText}>Don't have an account? Register.</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -115,7 +122,6 @@ const styles = StyleSheet.create({
   input: { flex: 1, paddingVertical: 15, fontSize: 16 },
   btn: { backgroundColor: '#1a237e', padding: 15, borderRadius: 10, alignItems: 'center', marginTop: 10 },
   btnText: { color: 'white', fontSize: 18, fontWeight: 'bold' },
-  forgotText: { color: '#1a237e', textAlign: 'center', marginTop: 15, fontWeight: '600' },
-  footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 30 },
+  footer: { marginTop: 20, alignItems: 'center' },
   linkText: { color: '#1a237e', fontWeight: 'bold' }
 });

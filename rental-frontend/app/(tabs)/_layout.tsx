@@ -1,5 +1,4 @@
 import { Tabs } from 'expo-router';
-
 import { Ionicons } from '@expo/vector-icons';
 
 export default function TabLayout() {
@@ -14,7 +13,16 @@ export default function TabLayout() {
         }} 
       />
 
-      {/* 2. Profile Tab */}
+      {/* 2. Favorites Tab */}
+      <Tabs.Screen 
+        name="favorites" 
+        options={{ 
+          title: 'Favorites', 
+          tabBarIcon: ({ color }) => <Ionicons name="heart" size={24} color={color} /> 
+        }} 
+      />
+
+      {/* 3. Profile Tab */}
       <Tabs.Screen 
         name="profile" 
         options={{ 
@@ -23,16 +31,15 @@ export default function TabLayout() {
         }} 
       />
       
-      {/* 3. Explore Tab (If you use it) */}
+      {/* ❌ THIS REMOVES THE EXPLORE BUTTON FROM THE SCREEN */}
       <Tabs.Screen 
         name="explore" 
         options={{ 
-          title: 'Explore', 
-          tabBarIcon: ({ color }) => <Ionicons name="search" size={24} color={color} /> 
+          href: null, // This hides the tab from the bottom bar
         }} 
       />
 
-      {/* ❌ DELETE ALL OTHER LINES (No 'auth', no '(tabs)', no 'my-booking') */}
+      {/* Hide other unused routes */}
       <Tabs.Screen name="forgotpassword" options={{ href: null }} /> 
     </Tabs>
   );
