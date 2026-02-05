@@ -86,4 +86,28 @@ class PropertyController extends Controller
 
         return response()->json(['message' => 'Property deleted successfully']);
     }
+
+    // 5. Update Existing Property
+    public function update(Request $request, $id)
+    {
+        $property = Property::find($id);
+
+        if (!$property) {
+            return response()->json(['message' => 'Property not found'], 404);
+        }
+
+        $validated = $request->validate([
+            'name' => 'required|string',
+            'price' => 'required|numeric',
+            'location' => 'required|string',
+            'description' => 'required|string',
+            'bedrooms' => 'nullable|integer',
+            'bathrooms' => 'nullable|integer',
+            'floor_area' => 'nullable|string',
+        ]);
+
+        $property->update($validated);
+
+        return response()->json(['message' => 'Property updated successfully', 'data' => $property]);
+    }
 }
