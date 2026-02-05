@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import axios, { AxiosError } from 'axios';
+import { Ionicons } from '@expo/vector-icons'; // Added for the Back Button icon
 
 const API_URL = 'http://10.0.2.2:8000/api/properties';
 
@@ -71,13 +72,12 @@ export default function EditProperty() {
       ]);
     } catch (err) {
       const error = err as AxiosError<any>; 
-
       if (error.response) {
         console.log("Laravel Error Details:", error.response.data);
         const errorMessage = error.response.data?.message || "Check validation rules.";
         Alert.alert("Update Failed", errorMessage);
       } else {
-        Alert.alert("Error", "Check your server connection (10.0.2.2:8000).");
+        Alert.alert("Error", "Check your server connection.");
       }
     }
   };
@@ -89,92 +89,86 @@ export default function EditProperty() {
   );
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <Stack.Screen options={{ title: 'Edit Property', headerTitleAlign: 'center' }} />
+    <View style={{ flex: 1, backgroundColor: '#fff' }}>
       
-      <View style={styles.form}>
-        <Text style={styles.label}>Property Name</Text>
-        <TextInput 
-          style={styles.input} 
-          value={form.name} 
-          onChangeText={(t) => setForm({...form, name: t})} 
-        />
+      {/* 👇 FLOATING BACK BUTTON (Matches your screenshot) */}
+      <TouchableOpacity 
+        style={styles.backButton} 
+        onPress={() => router.back()}
+      >
+        <Ionicons name="arrow-back" size={24} color="black" />
+      </TouchableOpacity>
+
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        <Stack.Screen options={{ title: 'Edit Property', headerTitleAlign: 'center', headerShown: false }} />
         
-        <View style={styles.row}>
-          <View style={[styles.column, { marginRight: 8 }]}>
-            <Text style={styles.label}>Price ($)</Text>
-            <TextInput 
-              style={styles.input} 
-              keyboardType="numeric" 
-              value={form.price} 
-              onChangeText={(t) => setForm({...form, price: t})} 
-            />
-          </View>
+        <View style={styles.form}>
+          <Text style={styles.label}>Property Name</Text>
+          <TextInput 
+            style={styles.input} 
+            value={form.name} 
+            onChangeText={(t) => setForm({...form, name: t})} 
+          />
           
-          <View style={[styles.column, { marginRight: 8 }]}>
-            <Text style={styles.label}>Beds</Text>
-            <TextInput 
-              style={styles.input} 
-              keyboardType="numeric" 
-              value={form.bedrooms} 
-              onChangeText={(t) => setForm({...form, bedrooms: t})} 
-            />
+          <View style={styles.row}>
+            <View style={[styles.column, { marginRight: 8 }]}>
+              <Text style={styles.label}>Price ($)</Text>
+              <TextInput style={styles.input} keyboardType="numeric" value={form.price} onChangeText={(t) => setForm({...form, price: t})} />
+            </View>
+            <View style={[styles.column, { marginRight: 8 }]}>
+              <Text style={styles.label}>Beds</Text>
+              <TextInput style={styles.input} keyboardType="numeric" value={form.bedrooms} onChangeText={(t) => setForm({...form, bedrooms: t})} />
+            </View>
+            <View style={styles.column}>
+              <Text style={styles.label}>Baths</Text>
+              <TextInput style={styles.input} keyboardType="numeric" value={form.bathrooms} onChangeText={(t) => setForm({...form, bathrooms: t})} />
+            </View>
           </View>
 
-          <View style={styles.column}>
-            <Text style={styles.label}>Baths</Text>
-            <TextInput 
-              style={styles.input} 
-              keyboardType="numeric" 
-              value={form.bathrooms} 
-              onChangeText={(t) => setForm({...form, bathrooms: t})} 
-            />
+          <View style={styles.row}>
+            <View style={{ flex: 2, marginRight: 10 }}>
+              <Text style={styles.label}>Location</Text>
+              <TextInput style={styles.input} value={form.location} onChangeText={(t) => setForm({...form, location: t})} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.label}>Area (m²)</Text>
+              <TextInput style={styles.input} keyboardType="numeric" value={form.floor_area} onChangeText={(t) => setForm({...form, floor_area: t})} />
+            </View>
           </View>
+
+          <Text style={styles.label}>Description</Text>
+          <TextInput style={[styles.input, styles.textArea]} multiline numberOfLines={4} value={form.description} onChangeText={(t) => setForm({...form, description: t})} />
+
+          <TouchableOpacity style={styles.updateBtn} onPress={handleUpdate}>
+            <Text style={styles.updateBtnText}>Save Changes</Text>
+          </TouchableOpacity>
         </View>
-
-
-        <View style={styles.row}>
-          <View style={{ flex: 2, marginRight: 10 }}>
-            <Text style={styles.label}>Location</Text>
-            <TextInput 
-              style={styles.input} 
-              value={form.location} 
-              onChangeText={(t) => setForm({...form, location: t})} 
-            />
-          </View>
-          
-          <View style={{ flex: 1 }}>
-            <Text style={styles.label}>Area (m²)</Text>
-            <TextInput 
-              style={styles.input} 
-              keyboardType="numeric"
-              value={form.floor_area} 
-              onChangeText={(t) => setForm({...form, floor_area: t})} 
-            />
-          </View>
-        </View>
-
-        <Text style={styles.label}>Description</Text>
-        <TextInput 
-          style={[styles.input, styles.textArea]} 
-          multiline 
-          numberOfLines={4}
-          value={form.description} 
-          onChangeText={(t) => setForm({...form, description: t})} 
-        />
-
-        <TouchableOpacity style={styles.updateBtn} onPress={handleUpdate}>
-          <Text style={styles.updateBtnText}>Save Changes</Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 50 },
-  form: { padding: 20 },
+  container: { flex: 1 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  form: { padding: 20, paddingTop: 100 }, // Pushes form down so back button doesn't hide inputs
+  backButton: {
+    position: 'absolute',
+    top: 50,
+    left: 20,
+    zIndex: 10,
+    backgroundColor: 'white',
+    width: 45,
+    height: 45,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 5, // Shadow for Android
+    shadowColor: '#000', // Shadow for iOS
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+  },
   row: { flexDirection: 'row', justifyContent: 'space-between' },
   column: { flex: 1 },
   label: { fontSize: 14, fontWeight: '600', marginBottom: 8, color: '#666' },
@@ -183,6 +177,6 @@ const styles = StyleSheet.create({
     padding: 12, marginBottom: 20, fontSize: 16, backgroundColor: '#f9f9f9', color: '#333' 
   },
   textArea: { height: 100, textAlignVertical: 'top' },
-  updateBtn: { backgroundColor: '#2196F3', padding: 16, borderRadius: 12, alignItems: 'center', marginTop: 10, elevation: 2 },
+  updateBtn: { backgroundColor: '#2196F3', padding: 16, borderRadius: 12, alignItems: 'center', marginTop: 10 },
   updateBtnText: { color: '#fff', fontSize: 18, fontWeight: 'bold' }
 });

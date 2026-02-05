@@ -13,9 +13,9 @@ import {
 } from 'react-native';
 import axios from 'axios';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // --- CONFIGURATION ---
+// ⚠️ Ensure this matches your actual backend URL
 const API_URL = 'http://10.0.2.2:8000/api/properties';
 const STORAGE_URL = 'http://10.0.2.2:8000/storage/';
 
@@ -111,32 +111,41 @@ export default function PropertyDetails() {
       </ScrollView>
 
 
-      {/* --- ADMIN ACTION FOOTER --- */}
+      {/* --- NEW USER ACTION FOOTER (Call & Book) --- */}
       <View style={styles.footer}>
-        <TouchableOpacity 
-          style={[styles.btn, styles.viewBookingBtn]} 
-          onPress={() => router.push('/admin/booking')}
-        >
-           <Ionicons name="list-outline" size={20} color="#2196F3" />
-           <Text style={styles.viewBookingBtnText}>View User Booking</Text>
-        </TouchableOpacity>
         
+        {/* Button 1: Call Now */}
         <TouchableOpacity 
-            style={[styles.btn, styles.editBtn]} 
-            onPress={() => router.push({
-                pathname: '/admin/edit-property',
-                params: { id: house.id }
-            })}
+          style={styles.callBtn} 
+          onPress={() => {
+             const phone = house.phone_number || '0123456789'; // Default if empty
+             Linking.openURL(`tel:${phone}`);
+          }}
         >
-           <Ionicons name="create-outline" size={20} color="#fff" />
-           <Text style={styles.editBtnText}>Edit Property</Text>
+          <Ionicons name="call-outline" size={20} color="#007AFF" />
+          <Text style={styles.callBtnText}>Call Now</Text>
         </TouchableOpacity>
+
+        {/* Button 2: Book Now */}
+        <TouchableOpacity 
+          style={styles.bookBtn} 
+          onPress={() => {
+            // Navigate to Booking Screen with the Property ID
+            router.push({
+                pathname: '/booking/create', // ⚠️ Make sure to create this file next!
+                params: { propertyId: house.id }
+            });
+          }}
+        >
+          <Text style={styles.bookBtnText}>Book Now</Text>
+        </TouchableOpacity>
+
       </View>
     </View>
   );
 }
 
-// --- STYLES AT THE BOTTOM ---
+// --- STYLES ---
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
@@ -163,17 +172,47 @@ const styles = StyleSheet.create({
   featureText: { fontSize: 14, fontWeight: '600', color: '#333' },
   sectionTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 10, marginTop: 10, color: '#333' },
   description: { fontSize: 16, lineHeight: 24, color: '#555' },
+  
+  // --- Updated Footer Styles ---
   footer: { 
     position: 'absolute', bottom: 0, left: 0, right: 0, 
-    backgroundColor: '#fff', padding: 15, borderTopWidth: 1, borderTopColor: '#eee', 
-    flexDirection: 'row', gap: 10 
+    backgroundColor: '#fff', padding: 20, borderTopWidth: 1, borderTopColor: '#eee', 
+    flexDirection: 'row', gap: 12,
+    elevation: 10, // Shadow for Android
+    shadowColor: '#000', // Shadow for iOS
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
-  btn: { 
-    flex: 1, paddingVertical: 14, borderRadius: 10, 
-    alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 6 
+  callBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#007AFF', // Blue Outline
+    backgroundColor: '#fff',
   },
-  viewBookingBtn: { backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#2196F3' },
-  viewBookingBtnText: { color: '#2196F3', fontSize: 14, fontWeight: 'bold' },
-  editBtn: { backgroundColor: '#2196F3', elevation: 2 },
-  editBtnText: { color: '#fff', fontSize: 14, fontWeight: 'bold' },
+  callBtnText: {
+    color: '#007AFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 8,
+  },
+  bookBtn: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: '#007AFF', // Solid Blue
+    elevation: 2,
+  },
+  bookBtnText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
 });

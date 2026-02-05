@@ -11,17 +11,18 @@ use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
-    // Handle Registration
+    // 1. REGISTER (Matches your Migration)
     public function register(Request $request) {
         $validator = Validator::make($request->all(), [
-            'first_name' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
-            'email' => 'required|string|email|unique:users',
-            'password' => 'required|string|min:6',
+            'first_name' => 'required|string',
+            'last_name' => 'required|string',
+            'email' => 'required|email|unique:users',
+            'password' => 'required|min:6',
+            // 'address' and 'dob' are optional, so we don't strictly validate them
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['status' => false, 'errors' => $validator->errors()], 422);
+            return response()->json(['status' => false, 'message' => $validator->errors()->first()], 422);
         }
 
         $user = User::create([
@@ -29,39 +30,34 @@ class AuthController extends Controller
             'last_name' => $request->last_name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'role' => 'user',
+            'address' => $request->address,       // ✅ Added back
+            'dob' => $request->dob,               // ✅ Added back
+            'phone_number' => $request->phone_number, // ✅ Added back
+            'role' => 'user'
         ]);
 
-        return response()->json(['status' => true, 'token' => $user->createToken('auth_token')->plainTextToken]);
+        return response()->json([
+            'status' => true,
+            'message' => 'Account Created',
+            'token' => $user->createToken('auth_token')->plainTextToken,
+            'user' => $user
+        ]);
     }
 
-    // Handle Login
+    // 2. LOGIN
     public function login(Request $request) {
         if (!Auth::attempt($request->only('email', 'password'))) {
-            return response()->json(['status' => false, 'message' => 'Invalid login details'], 401);
+            return response()->json(['status' => false, 'message' => 'Invalid email or password'], 401);
         }
 
         $user = User::where('email', $request->email)->firstOrFail();
-        return response()->json(['status' => true, 'token' => $user->createToken('auth_token')->plainTextToken, 'user' => $user]);
-    }
 
-    // Update Email and Phone Number
-    public function updateContact(Request $request) {
-        $user = Auth::user();
-        $user->update($request->only(['email', 'phone_number']));
-        return response()->json(['status' => true, 'user' => $user, 'message' => 'Contact updated']);
-    }
-
-    // Secure Password Change
-    public function changePassword(Request $request) {
-        $request->validate(['current_password' => 'required', 'new_password' => 'required|min:6|confirmed']);
-        $user = Auth::user();
-
-        if (!Hash::check($request->current_password, $user->password)) {
-            return response()->json(['status' => false, 'message' => 'Incorrect current password'], 400);
-        }
-
-        $user->update(['password' => Hash::make($request->new_password)]);
-        return response()->json(['status' => true, 'message' => 'Password updated']);
+        return response()->json([
+            'status' => true,
+            'message' => 'Login Successful',
+            'token' => $user->createToken('auth_token')->plainTextToken,
+            'user' => $user,
+            'role' => $user->role // 👈 Sends role to App
+        ]);
     }
 }

@@ -21,8 +21,7 @@ class User extends Authenticatable
         'password',
         'dob',
         'address',
-        'id_card_path',
-        'role', // 👈 3. THIS IS REQUIRED FOR ADMIN ROLE
+        'role', 
     ];
 
     protected $hidden = [

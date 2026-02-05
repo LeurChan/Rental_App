@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -12,6 +12,7 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
+    // 1. Basic Validation
     if (!email || !password) {
       Alert.alert("Error", "Please enter both email and password.");
       return;
@@ -19,38 +20,34 @@ export default function LoginScreen() {
 
     setLoading(true);
     try {
-      // ⚠️ Use 10.0.2.2 for Android Emulator
+      // ⚠️ Use 10.0.2.2 for Android Emulator, or your Laptop IP for real phone
       const response = await axios.post('http://10.0.2.2:8000/api/login', { email, password });
 
-      // 👇👇👇 DEBUGGING: CHECK YOUR ROLE HERE 👇👇👇
-      console.log("--------------------------------");
-      console.log("LOGIN SUCCESS!");
-      // This will print the whole user object so you can see the 'role'
-      console.log("FULL USER DATA:", response.data.user); 
-      
-      if (response.data.user && response.data.user.role) {
-          console.log("🌟 MY ROLE IS:", response.data.user.role); 
-      } else {
-          console.log("⚠️ Role not found in response.");
-      }
-      console.log("--------------------------------");
-      // 👆👆👆 END DEBUGGING 👆👆👆
-
       if (response.data.status) {
-        // Save the token
+        // 2. Save Token
         await AsyncStorage.setItem('userToken', response.data.token);
         
-        // OPTIONAL: Save the user info too (useful for Profile page)
-        await AsyncStorage.setItem('userInfo', JSON.stringify(response.data.user));
-        
-        Alert.alert("Success", "Login Successful!");
-        
-        // Redirect specifically to the Profile tab to verify login
-        router.replace('/(tabs)/profile'); 
+        // 3. CHECK ROLE & REDIRECT 🚀
+        const role = response.data.role; 
+        console.log("LOGIN SUCCESS. ROLE:", role);
+
+        if (role === 'admin') {
+            Alert.alert("Welcome Admin", "Redirecting to Dashboard...");
+            router.replace('/admin/dashboard'); 
+        } else {
+            // 👇 FIXED: Redirects to app/(tabs)/index.tsx
+            router.replace('/(tabs)'); 
+        }
       }
-    } catch (error) {
-      console.log("LOGIN ERROR:", error);
-      Alert.alert("Login Failed", "Check your email and password.");
+    } catch (error: any) {
+      console.log("LOGIN ERROR:", error.response?.data);
+      const serverMessage = error.response?.data?.message || "Login Failed";
+      
+      if (error.response?.status === 401) {
+          Alert.alert("Failed", "Incorrect Email or Password");
+      } else {
+          Alert.alert("Error", serverMessage);
+      }
     } finally {
       setLoading(false);
     }
@@ -70,6 +67,7 @@ export default function LoginScreen() {
             value={email} 
             onChangeText={setEmail} 
             autoCapitalize="none"
+            keyboardType="email-address"
           />
         </View>
 
@@ -85,7 +83,7 @@ export default function LoginScreen() {
           />
         </View>
 
-        <TouchableOpacity onPress={handleLogin} style={styles.btn}>
+        <TouchableOpacity onPress={handleLogin} style={styles.btn} disabled={loading}>
           {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Login</Text>}
         </TouchableOpacity>
 
