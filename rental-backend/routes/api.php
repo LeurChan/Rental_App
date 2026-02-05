@@ -6,15 +6,14 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\PropertyController; 
 use App\Http\Controllers\Api\BookingController;
 use App\Http\Controllers\Api\AdminController;
-// use App\Http\Controllers\AdminController; // (Uncomment if you created this file later)
 
-// 1. PUBLIC ROUTES (Anyone can access)
+// --- PUBLIC ROUTES ---
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
-Route::get('/home', [PropertyController::class, 'index']); // Get all houses
-Route::get('/properties/{id}', [PropertyController::class, 'show']); // Get details
+Route::get('/home', [PropertyController::class, 'index']); 
+Route::get('/properties/{id}', [PropertyController::class, 'show']); 
 
-// 2. PROTECTED ROUTES (Must be logged in)
+// --- PROTECTED ROUTES (Requires Login) ---
 Route::middleware('auth:sanctum')->group(function () {
     
     // Get User Profile
@@ -22,18 +21,17 @@ Route::middleware('auth:sanctum')->group(function () {
         return $request->user();
     });
 
-    Route::get('/admin/stats', [AdminController::class, 'stats']); // 👈 This must exist
+    // Profile Settings
+    Route::post('/user/change-password', [AuthController::class, 'changePassword']);
+    Route::put('/user/update-contact', [AuthController::class, 'updateContact']);
 
-    // --- USER BOOKING ROUTES ---
-    Route::post('/bookings', [BookingController::class, 'store']); // Book a house
-    Route::get('/bookings', [BookingController::class, 'index']);  // See my bookings
-
-    // --- ADMIN ROUTES ---
-    // 1. Add Property
+    // Admin Controls
+    Route::get('/admin/stats', [AdminController::class, 'stats']); 
     Route::post('/properties', [PropertyController::class, 'store']); 
-
-    // 2. Manage Bookings (👇 YOU WERE MISSING THESE)
     Route::get('/admin/bookings', [BookingController::class, 'indexAdmin']);
-Route::put('/bookings/{id}', [BookingController::class, 'update']);
 
+    // User Bookings
+    Route::post('/bookings', [BookingController::class, 'store']); 
+    Route::get('/bookings', [BookingController::class, 'index']);  
+    Route::put('/bookings/{id}', [BookingController::class, 'update']);
 });

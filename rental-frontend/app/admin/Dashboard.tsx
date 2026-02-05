@@ -113,14 +113,6 @@ export default function AdminDashboard() {
           <Ionicons name="chevron-forward" size={20} color="#ccc" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.actionBtn}>
-          <View style={[styles.iconBox, { backgroundColor: '#FFEBEE' }]}>
-            <Ionicons name="settings" size={24} color="#F44336" />
-          </View>
-          <Text style={styles.actionText}>Settings</Text>
-          <Ionicons name="chevron-forward" size={20} color="#ccc" />
-        </TouchableOpacity>
-
       </View>
     </ScrollView>
   );

@@ -94,7 +94,6 @@ export default function ProfileScreen() {
         <Text style={styles.name}>{user.first_name} {user.last_name}</Text>
         <Text style={styles.email}>{user.email}</Text>
 
-        {/* 👇 ADMIN BADGE (Visible only to Admin) */}
         {user.role === 'admin' && (
           <View style={styles.adminBadge}>
             <Text style={styles.adminBadgeText}>ADMIN ACCOUNT</Text>
@@ -104,12 +103,10 @@ export default function ProfileScreen() {
 
       <View style={styles.body}>
 
-        {/* 👇👇👇 ADMIN SECTION START 👇👇👇 */}
+        {/* ADMIN SECTION */}
         {user.role === 'admin' && (
             <View style={{marginBottom: 20}}>
                 <Text style={styles.sectionTitle}>Admin Controls</Text>
-                
-                {/* 1. Admin Dashboard Button */}
                 <TouchableOpacity 
                     style={[styles.menuButton, styles.adminButton]}
                     onPress={() => router.push('/admin/dashboard' as any)}
@@ -118,14 +115,11 @@ export default function ProfileScreen() {
                     <Text style={[styles.menuText, {color: '#fff'}]}>Admin Dashboard</Text>
                     <Ionicons name="chevron-forward" size={24} color="#fff" style={{ marginLeft: 'auto' }} />
                 </TouchableOpacity>
-
             </View>
         )}
-        {/* 👆👆👆 ADMIN SECTION END 👆👆👆 */}
 
-
+        {/* MY ACCOUNT SECTION */}
         <Text style={styles.sectionTitle}>My Account</Text>
-
         <TouchableOpacity 
           style={styles.menuButton}
           onPress={() => router.push('/my-booking' as any)}
@@ -134,6 +128,35 @@ export default function ProfileScreen() {
           <Text style={styles.menuText}>View My Bookings</Text>
           <Ionicons name="chevron-forward" size={24} color="#ccc" style={{ marginLeft: 'auto' }} />
         </TouchableOpacity>
+
+        {/* SETTINGS SECTION */}
+        <Text style={[styles.sectionTitle, { marginTop: 10 }]}>Settings</Text>
+        <View style={styles.settingsCard}>
+          {/* Change Password */}
+          <TouchableOpacity style={styles.settingsItem} onPress={() => router.push('/auth/change-password' as any)}>
+            <Ionicons name="lock-closed-outline" size={22} color="#555" />
+            <Text style={styles.settingsText}>Change Password</Text>
+            <Ionicons name="chevron-forward" size={20} color="#ccc" />
+          </TouchableOpacity>
+
+          <View style={styles.innerDivider} />
+
+          {/* Change Email */}
+          <TouchableOpacity style={styles.settingsItem} onPress={() => router.push('/auth/change-email' as any)}>
+            <Ionicons name="mail-outline" size={22} color="#555" />
+            <Text style={styles.settingsText}>Change Email</Text>
+            <Ionicons name="chevron-forward" size={20} color="#ccc" />
+          </TouchableOpacity>
+
+          <View style={styles.innerDivider} />
+
+          {/* Change Phone Number */}
+          <TouchableOpacity style={styles.settingsItem} onPress={() => router.push('/auth/change-phone' as any)}>
+            <Ionicons name="call-outline" size={22} color="#555" />
+            <Text style={styles.settingsText}>Change Phone Number</Text>
+            <Ionicons name="chevron-forward" size={20} color="#ccc" />
+          </TouchableOpacity>
+        </View>
 
         <View style={styles.divider} />
 
@@ -162,6 +185,12 @@ const styles = StyleSheet.create({
   divider: { height: 1, backgroundColor: '#eee', marginVertical: 20 },
   logoutButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FF3B30', padding: 15, borderRadius: 12 },
   logoutText: { color: '#fff', fontSize: 16, fontWeight: 'bold', marginLeft: 10 },
+  
+  // Settings Card Styles
+  settingsCard: { backgroundColor: '#fff', borderRadius: 12, elevation: 2, overflow: 'hidden' },
+  settingsItem: { flexDirection: 'row', alignItems: 'center', padding: 15 },
+  settingsText: { flex: 1, fontSize: 16, color: '#333', marginLeft: 15 },
+  innerDivider: { height: 1, backgroundColor: '#f0f0f0', marginHorizontal: 15 },
 
   // Admin Styles
   adminBadge: { backgroundColor: '#FF3B30', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10, marginTop: 10 },
