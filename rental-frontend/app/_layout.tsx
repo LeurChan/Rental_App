@@ -3,20 +3,19 @@ import { Stack } from 'expo-router';
 export default function RootLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      {/* 1. Main Tabs (This handles your Home/Index) */}
+      {/* 👇 1. Welcome Screen (Placed first to show first) */}
+      <Stack.Screen name="welcome" /> 
+
+      {/* 2. Main Tabs */}
       <Stack.Screen name="(tabs)" />
 
-      {/* 2. Auth Screens (Matches 'app/auth/login.tsx') */}
+      {/* 3. Auth Screens */}
       <Stack.Screen name="auth/login" />
       <Stack.Screen name="auth/register" />
 
-      {/* 3. My Booking (Matches 'app/my-booking.tsx') */}
+      {/* 4. Other Screens */}
       <Stack.Screen name="my-booking" options={{ title: 'My Bookings', headerShown: true }} />
-
-      {/* 4. Property Details (Matches 'app/property/[id].tsx') */}
       <Stack.Screen name="property/[id]" />
-
-      {/* 5. Modal (Matches 'app/modal.tsx') */}
       <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
     </Stack>
   );
