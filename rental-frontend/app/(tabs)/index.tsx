@@ -11,12 +11,14 @@ import {
   ScrollView,
   ActivityIndicator,
   RefreshControl,
-  Alert
+  Alert,
+  Modal, // 👈 Added Modal
+  StyleSheet
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage'; // 👈 Added for token
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // 👇 Import Styles
 import { styles, Colors } from './home.styles';
@@ -24,7 +26,7 @@ import { styles, Colors } from './home.styles';
 // --- CONFIGURATION ---
 const API_URL = 'http://10.0.2.2:8000/api/home'; 
 const STORAGE_URL = 'http://10.0.2.2:8000/storage/'; 
-const FAVORITE_TOGGLE_URL = 'http://10.0.2.2:8000/api/favorites/toggle'; // 👈 Added
+const FAVORITE_TOGGLE_URL = 'http://10.0.2.2:8000/api/favorites/toggle';
 
 interface Property {
   id: number;
@@ -46,9 +48,12 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
-  
-  // 👇 1. Added state for favorites
   const [favorites, setFavorites] = useState<number[]>([]);
+
+  // 👇 1. Added state for Filter Modal
+  const [isFilterVisible, setIsFilterVisible] = useState(false);
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
   
   const categories = ['All', 'House', 'Apartment', 'Room', 'Villa', 'Penthouse'];
 
@@ -63,6 +68,10 @@ export default function HomeScreen() {
       result = result.filter(item => item.category === selectedCategory);
     }
 
+    // Apply Price Filters
+    if (minPrice) result = result.filter(item => item.price >= parseInt(minPrice));
+    if (maxPrice) result = result.filter(item => item.price <= parseInt(maxPrice));
+
     if (searchText) {
       result = result.filter(item => 
         item.name.toLowerCase().includes(searchText.toLowerCase()) || 
@@ -71,15 +80,12 @@ export default function HomeScreen() {
     }
 
     setFilteredProperties(result);
-  }, [properties, selectedCategory, searchText]);
+  }, [properties, selectedCategory, searchText, minPrice, maxPrice]);
 
   const fetchProperties = async () => {
     try {
       const response = await axios.get(API_URL);
       setProperties(response.data);
-      
-      // If your API returns user's current favorites, set them here:
-      // setFavorites(response.data.user_favorites || []);
     } catch (error) {
       console.error("Error fetching properties:", error);
     } finally {
@@ -88,7 +94,6 @@ export default function HomeScreen() {
     }
   };
 
-  // 👇 2. Toggle Favorite Function
   const toggleFavorite = async (propertyId: number) => {
     try {
       const token = await AsyncStorage.getItem('userToken');
@@ -118,35 +123,16 @@ export default function HomeScreen() {
     fetchProperties();
   }, []);
 
-  const renderCategoryItem = ({ item }: { item: string }) => (
-    <TouchableOpacity
-      onPress={() => setSelectedCategory(item)}
-      style={[
-        styles.categoryItem,
-        selectedCategory === item && styles.categoryItemActive,
-      ]}
-    >
-      <Text style={[styles.categoryText, selectedCategory === item && styles.categoryTextActive]}>
-        {item}
-      </Text>
-    </TouchableOpacity>
-  );
-
   const renderPropertyCard = ({ item, horizontal = false }: { item: Property, horizontal?: boolean }) => {
     const cardStyle = horizontal ? styles.cardHorizontal : styles.cardVertical;
     const imageStyle = horizontal ? styles.cardImageHorizontal : styles.cardImageVertical;
-    
-    // 👇 3. Check if current item is favorited
     const isFavorited = favorites.includes(item.id);
 
     let imageUrl = { uri: 'https://via.placeholder.com/400x300.png?text=No+Image' };
-    
     if (item.image_url) {
-        if (item.image_url.startsWith('http')) {
-            imageUrl = { uri: item.image_url };
-        } else {
-            imageUrl = { uri: `${STORAGE_URL}${item.image_url}` };
-        }
+        imageUrl = item.image_url.startsWith('http') 
+            ? { uri: item.image_url } 
+            : { uri: `${STORAGE_URL}${item.image_url}` };
     }
 
     return (
@@ -156,19 +142,13 @@ export default function HomeScreen() {
       >
         <View style={styles.imageContainer}>
             <Image source={imageUrl} style={imageStyle} resizeMode="cover" />
-            
-            {/* 👇 4. Updated Favorite Icon with Logic */}
-            <TouchableOpacity 
-              style={styles.heartIcon} 
-              onPress={() => toggleFavorite(item.id)}
-            >
+            <TouchableOpacity style={styles.heartIcon} onPress={() => toggleFavorite(item.id)}>
                  <Ionicons 
-                   name={isFavorited ? "heart" : "heart-outline"} 
-                   size={20} 
-                   color={isFavorited ? "#ff0000" : Colors.red} 
+                    name={isFavorited ? "heart" : "heart-outline"} 
+                    size={20} 
+                    color={isFavorited ? "#ff0000" : Colors.red} 
                  />
             </TouchableOpacity>
-
              <View style={styles.typeTag}>
                  <Text style={styles.typeTagText}>{item.category || 'Property'}</Text>
              </View>
@@ -178,29 +158,6 @@ export default function HomeScreen() {
           <Text style={styles.houseTitle} numberOfLines={1}>{item.name}</Text>
           <Text style={styles.price}>${item.price} <Text style={styles.priceSuffix}>/ month</Text></Text>
           
-          <View style={{flexDirection: 'row', marginBottom: 8, marginTop: 4}}>
-              {item.bedrooms ? (
-                  <View style={{flexDirection: 'row', alignItems: 'center', marginRight: 10}}>
-                      <Ionicons name="bed-outline" size={16} color={Colors.textLight} />
-                      <Text style={{marginLeft: 4, color: Colors.textLight, fontSize: 12}}>{item.bedrooms}</Text>
-                  </View>
-              ) : null}
-
-              {item.bathrooms ? (
-                  <View style={{flexDirection: 'row', alignItems: 'center', marginRight: 10}}>
-                      <Ionicons name="water-outline" size={16} color={Colors.textLight} />
-                      <Text style={{marginLeft: 4, color: Colors.textLight, fontSize: 12}}>{item.bathrooms}</Text>
-                  </View>
-              ) : null}
-
-              {item.floor_area ? (
-                  <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                      <Ionicons name="expand-outline" size={16} color={Colors.textLight} />
-                      <Text style={{marginLeft: 4, color: Colors.textLight, fontSize: 12}}>{item.floor_area}m²</Text>
-                  </View>
-              ) : null}
-          </View>
-
           <View style={styles.locationRow}>
             <Ionicons name="location-outline" size={16} color={Colors.textLight} style={{marginRight: 4}}/>
             <Text style={styles.locationTextCard} numberOfLines={1}>{item.location}</Text>
@@ -210,36 +167,86 @@ export default function HomeScreen() {
     );
   };
 
-  if (loading) {
-    return (
-      <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
-        <ActivityIndicator size="large" color={Colors.primary} />
-      </View>
-    );
-  }
-
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
       
+      {/* 👇 2. Filter Modal Component */}
+      <Modal visible={isFilterVisible} animationType="slide" transparent={true}>
+        <View style={localStyles.modalOverlay}>
+          <View style={localStyles.modalContent}>
+            <View style={localStyles.modalHeader}>
+                <Text style={localStyles.modalTitle}>Filter Properties</Text>
+                <TouchableOpacity onPress={() => setIsFilterVisible(false)}>
+                    <Ionicons name="close" size={28} color="#333" />
+                </TouchableOpacity>
+            </View>
+
+            <Text style={localStyles.label}>Category</Text>
+            <View style={localStyles.categoryGrid}>
+                {categories.map((cat) => (
+                    <TouchableOpacity 
+                        key={cat} 
+                        style={[localStyles.catBtn, selectedCategory === cat && localStyles.activeCat]}
+                        onPress={() => setSelectedCategory(cat)}
+                    >
+                        <Text style={selectedCategory === cat ? localStyles.activeText : localStyles.inactiveText}>{cat}</Text>
+                    </TouchableOpacity>
+                ))}
+            </View>
+
+            <Text style={localStyles.label}>Price Range ($)</Text>
+            <View style={localStyles.priceRow}>
+                <TextInput 
+                    placeholder="Min" 
+                    keyboardType="numeric" 
+                    style={localStyles.priceInput}
+                    value={minPrice}
+                    onChangeText={setMinPrice}
+                />
+                <Text style={{marginHorizontal: 10, alignSelf:'center'}}>-</Text>
+                <TextInput 
+                    placeholder="Max" 
+                    keyboardType="numeric" 
+                    style={localStyles.priceInput}
+                    value={maxPrice}
+                    onChangeText={setMaxPrice}
+                />
+            </View>
+
+            <TouchableOpacity 
+              style={localStyles.applyBtn} 
+              onPress={() => setIsFilterVisible(false)}
+            >
+              <Text style={localStyles.applyText}>Apply Filters</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              onPress={() => {
+                  setSelectedCategory('All');
+                  setMinPrice('');
+                  setMaxPrice('');
+              }}
+              style={{marginTop: 15, alignItems: 'center'}}
+            >
+                <Text style={{color: Colors.red}}>Clear All</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       <ScrollView 
         showsVerticalScrollIndicator={false} 
         contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.primary]} />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.primary]} />}
       >
-        
         <View style={styles.header}>
           <View>
               <Text style={{fontSize: 26, fontWeight: 'bold', color: Colors.primary}}>House Rental</Text>
               <Text style={{fontSize: 14, color: Colors.textLight}}>Find your perfect home</Text>
           </View>
           <TouchableOpacity onPress={() => router.push('/(tabs)/profile')}> 
-              <Image 
-                  source={{ uri: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png' }} 
-                  style={styles.profileImage} 
-              />
+              <Image source={{ uri: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png' }} style={styles.profileImage} />
           </TouchableOpacity>
         </View>
 
@@ -248,74 +255,59 @@ export default function HomeScreen() {
             <Ionicons name="search-outline" size={24} color={Colors.textLight} style={styles.searchIcon} />
             <TextInput
               placeholder="Search..."
-              placeholderTextColor={Colors.textLight}
               style={styles.searchInput}
               value={searchText}
               onChangeText={setSearchText}
             />
           </View>
-          <TouchableOpacity style={styles.filterBtn}>
+          {/* 👇 3. Filter Button triggers Modal */}
+          <TouchableOpacity style={styles.filterBtn} onPress={() => setIsFilterVisible(true)}>
             <MaterialIcons name="tune" size={24} color={Colors.white} />
           </TouchableOpacity>
         </View>
 
-        <View>
-              <FlatList
-               data={categories}
-               horizontal
-               showsHorizontalScrollIndicator={false}
-               keyExtractor={(item) => item}
-               renderItem={renderCategoryItem}
-               contentContainerStyle={styles.categoriesList}
-             />
+        {/* Existing Content... */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>
+              {selectedCategory === 'All' ? 'Nearby Properties' : `${selectedCategory}s`}
+          </Text>
+          <FlatList
+            data={filteredProperties}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            keyExtractor={(item) => 'nearby-' + item.id.toString()}
+            renderItem={({ item }) => renderPropertyCard({ item, horizontal: true })}
+            contentContainerStyle={{ paddingLeft: 20, paddingBottom: 10 }}
+          />
         </View>
 
         <View style={styles.sectionContainer}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>
-                {selectedCategory === 'All' ? 'Nearby Properties' : `${selectedCategory}s`}
-            </Text>
-            <TouchableOpacity onPress={() => setSelectedCategory('All')}>
-              <Text style={styles.seeAllText}>See All</Text>
-            </TouchableOpacity>
-          </View>
-          
-          {filteredProperties.length === 0 ? (
-             <Text style={{marginLeft: 20, color: '#999', marginTop: 10}}>No properties found.</Text>
-          ) : (
-              <FlatList
-                data={filteredProperties}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                keyExtractor={(item) => 'nearby-' + item.id.toString()}
-                renderItem={({ item }) => renderPropertyCard({ item, horizontal: true })}
-                contentContainerStyle={{ paddingLeft: 20, paddingBottom: 10 }}
-              />
-          )}
-        </View>
-
-        <View style={styles.adsBannerContainer}>
-            <View style={styles.dummyAdsBanner}>
-                <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold'}}>Find Your DREAM HOME</Text>
-                <Text style={{color: 'white', fontSize: 14}}>FOR SALE</Text>
-            </View>
-        </View>
-
-        <View style={styles.sectionContainer}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>All Properties</Text>
-          </View>
-
+          <Text style={styles.sectionTitle}>All Properties</Text>
            <View style={{paddingHorizontal: 20}}>
               {filteredProperties.map((item) => (
-                 <View key={'all-' + item.id}>
-                     {renderPropertyCard({ item, horizontal: false })}
-                 </View>
+                 <View key={'all-' + item.id}>{renderPropertyCard({ item, horizontal: false })}</View>
               ))}
            </View>
         </View>
-
       </ScrollView>
     </SafeAreaView>
   );
 }
+
+// Additional Modal Styles
+const localStyles = StyleSheet.create({
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+    modalContent: { backgroundColor: '#fff', borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 25, paddingBottom: 40 },
+    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+    modalTitle: { fontSize: 22, fontWeight: 'bold' },
+    label: { fontSize: 16, fontWeight: '600', marginBottom: 10, marginTop: 10 },
+    categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+    catBtn: { paddingVertical: 8, paddingHorizontal: 15, borderRadius: 20, borderWidth: 1, borderColor: '#eee' },
+    activeCat: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+    activeText: { color: '#fff' },
+    inactiveText: { color: '#666' },
+    priceRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },
+    priceInput: { flex: 1, borderWidth: 1, borderColor: '#eee', borderRadius: 10, padding: 10 },
+    applyBtn: { backgroundColor: Colors.primary, padding: 15, borderRadius: 15, marginTop: 30, alignItems: 'center' },
+    applyText: { color: '#fff', fontSize: 18, fontWeight: 'bold' }
+});

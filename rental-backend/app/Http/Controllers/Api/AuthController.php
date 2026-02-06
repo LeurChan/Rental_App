@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rules\Password;
 
 class AuthController extends Controller
 {
@@ -58,6 +59,58 @@ class AuthController extends Controller
             'token' => $user->createToken('auth_token')->plainTextToken,
             'user' => $user,
             'role' => $user->role // 👈 Sends role to App
+        ]);
+    }
+    public function updateContact(Request $request)
+{
+    // 1. Get the authenticated user via Sanctum
+    $user = $request->user(); 
+
+    // 2. Validate the input
+    $request->validate([
+        'email' => 'nullable|email|unique:users,email,' . $user->id,
+        'phone_number' => 'nullable|string',
+    ]);
+
+    // 3. Perform the update on the $user object
+    // This triggers the UPDATE query for the specific user ID
+    $user->update([
+        'email' => $request->email ?? $user->email,
+        'phone_number' => $request->phone_number ?? $user->phone_number,
+    ]);
+
+    return response()->json([
+        'status' => true,
+        'message' => 'Profile updated successfully',
+        'user' => $user
+    ]);
+}
+public function changePassword(Request $request)
+    {
+        // 1. Validation - Field names MUST match the frontend keys
+        $request->validate([
+            'old_password' => 'required',
+            'new_password' => 'required|min:8|confirmed', // looks for new_password_confirmation
+        ]);
+
+        $user = Auth::user();
+
+        // 2. Verify Old Password
+        if (!Hash::check($request->old_password, $user->password)) {
+            return response()->json([
+                'status' => false,
+                'message' => 'The current password you entered is incorrect.'
+            ], 401);
+        }
+
+        // 3. Update Password
+        $user->update([
+            'password' => Hash::make($request->new_password)
+        ]);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Password changed successfully!'
         ]);
     }
 }
