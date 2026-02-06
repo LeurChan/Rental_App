@@ -12,21 +12,21 @@ class Booking extends Model
     protected $fillable = [
         'user_id',
         'property_id',
+        'phone_number',
         'start_date',
         'end_date',
-        'total_price',
+        'notes',
         'status',
-        'phone_number',
-        'notes'
+        'total_price' // Added to prevent SQL errors
     ];
 
-    // Relationship: A booking belongs to a User
-    public function user() {
-        return $this->belongsTo(User::class);
+    public function user()
+    {
+       return $this->belongsTo(User::class);
     }
 
-    // Relationship: A booking belongs to a Property
-    public function property() {
+    public function property()
+    {
         return $this->belongsTo(Property::class);
     }
 }

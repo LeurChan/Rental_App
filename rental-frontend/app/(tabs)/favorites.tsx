@@ -3,7 +3,7 @@ import { View, Text, FlatList, ActivityIndicator, RefreshControl, SafeAreaView }
 import { useFocusEffect, useRouter } from 'expo-router';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import PropertyCard from '../../components/propertycard'; // 👈 Import the shared component
+import PropertyCard from '@/components/PropertyCard'; // 👈 Capitalize P and C👈 Import the shared component
 import { Ionicons } from '@expo/vector-icons';
 import { styles, Colors } from './home.styles';
 

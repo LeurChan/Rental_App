@@ -8,12 +8,6 @@ use App\Http\Controllers\Api\BookingController;
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\FavoriteController;
 
-/*
-|--------------------------------------------------------------------------
-| API Routes
-|--------------------------------------------------------------------------
-*/
-
 // 1. PUBLIC ROUTES (Anyone can access)
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);

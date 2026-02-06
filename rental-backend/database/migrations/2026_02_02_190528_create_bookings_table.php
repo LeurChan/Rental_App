@@ -18,7 +18,7 @@ return new class extends Migration
             // Booking Details
             $table->date('start_date');
             $table->date('end_date');
-            $table->decimal('total_price', 10, 2);
+            $table->decimal('total_price', 10, 2)->nullable();
             $table->string('status')->default('pending'); // pending, approved, rejected
             
             // Contact Info
