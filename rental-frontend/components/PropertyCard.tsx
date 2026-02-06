@@ -3,9 +3,9 @@ import { View, Text, Image, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { styles, Colors } from '../app/(tabs)/home.styles'; 
 
-const STORAGE_URL = 'http://10.0.2.2:8000/storage/';
+// 👇 UPDATED: Pointing to the specific properties subfolder
+const STORAGE_URL = 'http://10.0.2.2:8000/storage/properties/';
 
-// 👇 1. Define what a "Property" looks like
 interface Property {
   id: number;
   name: string;
@@ -17,7 +17,6 @@ interface Property {
   bathrooms?: number;
 }
 
-// 👇 2. Define the Props for this component
 interface PropertyCardProps {
   item: Property;
   isFavorited: boolean;
@@ -26,6 +25,7 @@ interface PropertyCardProps {
 }
 
 export default function PropertyCard({ item, isFavorited, onToggleFavorite, onPress }: PropertyCardProps) {
+  // Default placeholder if image is missing
   let imageUrl = { uri: 'https://via.placeholder.com/400x300.png?text=No+Image' };
   
   if (item.image_url) {
@@ -37,6 +37,7 @@ export default function PropertyCard({ item, isFavorited, onToggleFavorite, onPr
   return (
     <TouchableOpacity style={styles.cardVertical} onPress={onPress}>
       <View style={styles.imageContainer}>
+        {/* The Image will now find the path in rental-backend/public/storage/properties/ */}
         <Image source={imageUrl} style={styles.cardImageVertical} resizeMode="cover" />
         <TouchableOpacity 
           style={styles.heartIcon} 

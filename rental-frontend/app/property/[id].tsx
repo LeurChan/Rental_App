@@ -16,7 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const API_URL = 'http://10.0.2.2:8000/api/properties';
-const STORAGE_URL = 'http://10.0.2.2:8000/storage/';
+const STORAGE_URL = 'http://10.0.2.2:8000/storage/properties/';
 
 interface Property {
   id: number;
@@ -41,7 +41,7 @@ export default function PropertyDetails() {
 
   useEffect(() => {
     fetchDetails();
-    checkUserRole();
+    checkUserStatus();
   }, [id]);
 
   const fetchDetails = async () => {
@@ -55,25 +55,28 @@ export default function PropertyDetails() {
     }
   };
 
-  const checkUserRole = async () => {
+  const checkUserStatus = async () => {
     try {
+      const token = await AsyncStorage.getItem('userToken');
       const userData = await AsyncStorage.getItem('userInfo');
-      if (userData) {
+
+      if (token && userData) {
         const user = JSON.parse(userData);
         if (user.role === 'admin') {
           setIsAdmin(true);
+          return;
         }
       }
+      setIsAdmin(false);
     } catch (error) {
-      console.log("Role Check Error:", error);
+      setIsAdmin(false);
     }
   };
 
-  // 👇 DELETE LOGIC
   const handleDelete = async () => {
     Alert.alert(
       "Delete Property",
-      "Are you sure you want to delete this listing? This action cannot be undone.",
+      "Are you sure you want to delete this listing?",
       [
         { text: "Cancel", style: "cancel" },
         { 
@@ -82,17 +85,12 @@ export default function PropertyDetails() {
           onPress: async () => {
             try {
               const token = await AsyncStorage.getItem('userToken');
-              const response = await axios.delete(`${API_URL}/${id}`, {
+              await axios.delete(`${API_URL}/${id}`, {
                 headers: { Authorization: `Bearer ${token}` }
               });
-
-              if (response.status === 200 || response.data.status) {
-                Alert.alert("Success", "Property deleted successfully.");
-                router.replace('/'); // Redirect to home after deletion
-              }
+              router.replace('/');
             } catch (error) {
-              console.log("Delete Error:", error);
-              Alert.alert("Error", "Could not delete property.");
+              Alert.alert("Error", "Action unauthorized or server error.");
             }
           }
         }
@@ -103,6 +101,7 @@ export default function PropertyDetails() {
   if (loading) return <ActivityIndicator size="large" color="#007AFF" style={styles.center} />;
   if (!house) return <Text style={styles.center}>Property not found</Text>;
 
+  // 👇 LOGIC FOR IMAGE URL
   let imageUrl = { uri: 'https://via.placeholder.com/400x300' };
   if (house.image_url) {
     imageUrl = house.image_url.startsWith('http') 
@@ -151,7 +150,6 @@ export default function PropertyDetails() {
         </View>
       </ScrollView>
 
-      {/* FOOTER BUTTONS */}
       <View style={styles.footer}>
         {isAdmin ? (
           <View style={{ flex: 1, flexDirection: 'column', gap: 10 }}>
@@ -182,7 +180,7 @@ export default function PropertyDetails() {
             </TouchableOpacity>
           </View>
         ) : (
-          <>
+          <View style={{ flex: 1, flexDirection: 'row', gap: 12 }}>
             <TouchableOpacity 
               style={styles.outlineBtn} 
               onPress={() => {
@@ -205,7 +203,7 @@ export default function PropertyDetails() {
             >
               <Text style={styles.fillBtnText}>Book Now</Text>
             </TouchableOpacity>
-          </>
+          </View>
         )}
       </View>
     </View>
@@ -215,7 +213,7 @@ export default function PropertyDetails() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  scrollContent: { paddingBottom: 160 }, // Increased padding for extra admin button
+  scrollContent: { paddingBottom: 180 }, 
   imageContainer: { position: 'relative' },
   image: { width: '100%', height: 300, resizeMode: 'cover' },
   backButton: { position: 'absolute', top: 50, left: 20, zIndex: 10, backgroundColor: 'white', padding: 8, borderRadius: 20, elevation: 5 },
@@ -229,7 +227,7 @@ const styles = StyleSheet.create({
   featureText: { fontSize: 14, fontWeight: '600', color: '#333' },
   sectionTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 10, marginTop: 10, color: '#333' },
   description: { fontSize: 16, lineHeight: 24, color: '#555' },
-  footer: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#fff', padding: 20, borderTopWidth: 1, borderTopColor: '#eee', elevation: 10, shadowColor: '#000', shadowOffset: { width: 0, height: -2 }, shadowOpacity: 0.1, shadowRadius: 4 },
+  footer: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#fff', padding: 20, borderTopWidth: 1, borderTopColor: '#eee', elevation: 10 },
   outlineBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, borderRadius: 12, borderWidth: 1.5, borderColor: '#007AFF', backgroundColor: '#fff', gap: 8 },
   outlineBtnText: { color: '#007AFF', fontSize: 16, fontWeight: 'bold' },
   fillBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, borderRadius: 12, backgroundColor: '#007AFF', elevation: 2, gap: 8 },
